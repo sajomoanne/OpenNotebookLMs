@@ -67,12 +67,16 @@ class Router {
             template: null // No template - will show inline 404 content
         });
 
-        // Handle browser navigation
-        window.addEventListener('popstate', (e) => {
+        // Handle browser navigation (hashchange for hash-based routing)
+        window.addEventListener('hashchange', (e) => {
             this.handleRoute();
         });
 
         // Handle initial route
+        // Set default hash if none exists for GitHub Pages
+        if (!window.location.hash) {
+            window.location.hash = '/';
+        }
         this.handleRoute();
 
         // Intercept link clicks for smooth navigation
@@ -110,16 +114,18 @@ class Router {
             return;
         }
 
-        // Update browser history
-        if (path !== window.location.pathname) {
-            history.pushState({}, '', path);
+        // For hash-based routing, update the hash instead of pathname
+        if (path !== window.location.hash.substring(1)) {
+            window.location.hash = path;
         }
 
         await this.loadRoute(route);
     }
 
     async handleRoute() {
-        const path = window.location.pathname;
+        // For hash-based routing, get path from hash instead of pathname
+        const hashPath = window.location.hash;
+        const path = hashPath ? hashPath.substring(1) : '/'; // Remove # and default to /
         const route = this.routes.get(path);
         
         if (!route) {
