@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Notebooks | OpenNotebookLMs</title>
+    <meta name="description" content="Admin interface for reviewing and moderating submitted notebooks.">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="robots" content="noindex, nofollow">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Initial Theme Logic (prevents flash)
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 glass-morphism border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-darkBg/80 px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2 min-w-0 flex-1">
+            <div class="bg-blue-600 p-2 rounded-lg shrink-0">
+                <i data-lucide="book-open" class="text-white w-6 h-6"></i>
+            </div>
+            <a href="/" class="text-lg sm:text-2xl font-bold tracking-tight truncate">OpenNotebookLMs</a>
+            <span class="hidden sm:inline-flex bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full ml-2 font-medium uppercase shrink-0">R&D Beta</span>
+        </div>
+        
+        <div class="flex items-center space-x-2 sm:space-x-4 shrink-0">
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <i data-lucide="sun" id="sunIcon" class="w-5 h-5 hidden dark:block"></i>
+                <i data-lucide="moon" id="moonIcon" class="w-5 h-5 block dark:hidden"></i>
+            </button>
+            
+            <div id="authContainer" class="flex items-center">
+                <button id="loginBtn" onclick="toggleModal('authModal')" class="text-xs sm:text-sm font-semibold whitespace-nowrap hover:text-blue-600 transition-colors mr-1 sm:mr-2">Login / Sign up</button>
+                <div id="userAvatar" onclick="handleProfileClick()" class="hidden w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 border border-blue-200 dark:border-blue-800 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Navigation Menu (optional enhancement) -->
+    <div class="md:hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-darkBg px-4 py-2">
+        <div class="flex space-x-4 text-sm">
+            <a href="/" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Home</a>
+            <a href="/my-notebooks" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">My Notebooks</a>
+            <a href="/create" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Create</a>
+            <a href="/settings" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Settings</a>
+        </div>
+    </div>
+
+    <!-- Admin Review Content -->
+    <main data-page-content class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div class="flex items-center mb-6">
+            <button onclick="window.router?.redirect('/settings')" class="mr-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold">Review Notebooks</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Review and approve notebooks submitted by users</p>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex space-x-1 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+            <button onclick="filterReviewQueue('pending')" id="pendingTab" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-white dark:bg-gray-700 text-blue-600 shadow-sm">
+                Pending Review
+            </button>
+            <button onclick="filterReviewQueue('approved')" id="approvedTab" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                Approved
+            </button>
+            <button onclick="filterReviewQueue('declined')" id="declinedTab" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                Declined
+            </button>
+        </div>
+
+        <!-- Review Queue List -->
+        <div id="reviewQueueList" class="space-y-4">
+            <div class="text-center py-12">
+                <i data-lucide="loader-2" class="w-10 h-10 text-blue-500 animate-spin mb-4"></i>
+                <p class="text-gray-500">Loading review queue...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyReviewState" class="hidden text-center py-12">
+            <i data-lucide="check-circle" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">All caught up!</h3>
+            <p class="text-gray-500">No notebooks in this review queue.</p>
+        </div>
+    </main>
+
+    <!-- FIREBASE MODULES -->
+    <script type="module" src="router.js"></script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        
+        // Update authentication UI with delay to ensure auth state is ready
+        setTimeout(() => {
+            if (window.updateAuthUI) {
+                window.updateAuthUI();
+            }
+        }, 100);
+    </script>
+</body>
+</html>

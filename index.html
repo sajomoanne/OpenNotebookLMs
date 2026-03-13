@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenNotebookLMs | Discover & Share AI Research</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Discover and share AI research notebooks from Google NotebookLM. Browse curated collections across Science, Law, Business, and more topics.">
+    <meta name="keywords" content="NotebookLM, AI research, machine learning, artificial intelligence, research notebooks, Google AI, academic research">
+    <meta name="author" content="OpenNotebookLMs">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="OpenNotebookLMs | Discover & Share AI Research">
+    <meta property="og:description" content="Discover and share AI research notebooks from Google NotebookLM. Browse curated collections across various topics.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://opennotebooklms.com">
+    <meta property="og:image" content="https://opennotebooklms.com/og-image.png">
+    <meta property="og:image:alt" content="OpenNotebookLMs - Discover & Share AI Research">
+    <meta property="og:site_name" content="OpenNotebookLMs">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="OpenNotebookLMs | Discover & Share AI Research">
+    <meta name="twitter:description" content="Discover and share AI research notebooks from Google NotebookLM. Browse curated collections across various topics.">
+    <meta name="twitter:image" content="https://opennotebooklms.com/og-image.png">
+    <meta name="twitter:creator" content="@opennotebooklms">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://opennotebooklms.com">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "OpenNotebookLMs",
+      "description": "Discover and share AI research notebooks from Google NotebookLM",
+      "url": "https://opennotebooklms.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://opennotebooklms.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Initial Theme Logic (prevents flash)
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+</head>
+<body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 min-h-screen">
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 glass-morphism border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-darkBg/80 px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2 min-w-0 flex-1">
+            <div class="bg-blue-600 p-2 rounded-lg shrink-0">
+                <i data-lucide="book-open" class="text-white w-6 h-6"></i>
+            </div>
+            <a href="/" class="text-lg sm:text-2xl font-bold tracking-tight truncate">OpenNotebookLMs</a>
+            <span class="hidden sm:inline-flex bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full ml-2 font-medium uppercase shrink-0">R&D Beta</span>
+        </div>
+        
+        <div class="flex items-center space-x-2 sm:space-x-4 shrink-0">
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <i data-lucide="sun" id="sunIcon" class="w-5 h-5 hidden dark:block"></i>
+                <i data-lucide="moon" id="moonIcon" class="w-5 h-5 block dark:hidden"></i>
+            </button>
+            
+            <div id="authContainer" class="flex items-center">
+                <button id="loginBtn" onclick="toggleModal('authModal')" class="text-xs sm:text-sm font-semibold whitespace-nowrap hover:text-blue-600 transition-colors mr-1 sm:mr-2">Login / Sign up</button>
+                <div id="userAvatar" onclick="handleProfileClick()" class="hidden w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 border border-blue-200 dark:border-blue-800 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Navigation Menu (optional enhancement) -->
+    <div class="md:hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-darkBg px-4 py-2">
+        <div class="flex space-x-4 text-sm">
+            <a href="/" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Home</a>
+            <a href="/my-notebooks" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">My Notebooks</a>
+            <a href="/create" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Create</a>
+            <a href="/settings" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Settings</a>
+        </div>
+    </div>
+
+    <main id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <!-- Hero / Mission Section -->
+        <section class="mb-10 grid grid-cols-1 lg:grid-cols-[1.6fr,1.1fr] gap-8 items-center">
+            <div>
+                <p class="inline-flex items-center text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 dark:text-blue-300 mb-3">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>
+                    Public directory for NotebookLM
+                </p>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
+                    OpenNotebookLMs: Discover &amp; Share
+                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-sky-400 to-indigo-500">
+                        AI Research Notebooks
+                    </span>
+                </h1>
+                <p class="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mb-4">
+                    NotebookLM is incredible for private research, but it has no discovery layer.
+                    OpenNotebookLMs turns those private notebooks into a searchable, public gallery of
+                    AI‑augmented research.
+                </p>
+                <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-2xl mb-6">
+                    Browse curated notebooks across various subjects and topics. Share your studies
+                    and research with the community, and learn from how others synthesize complex
+                    information with AI.
+                </p>
+                <div class="flex flex-col sm:flex-row sm:flex-wrap items-center sm:items-center gap-3">
+                    <button onclick="handleShareClick()" class="w-full sm:w-auto inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold text-sm sm:text-base shadow-lg shadow-blue-500/30 transition-all">
+                        <i data-lucide="upload-cloud" class="w-4 h-4 mr-2"></i>
+                        Submit your NotebookLM
+                    </button>
+                    <span class="w-full sm:w-auto flex justify-center sm:justify-start items-center text-center sm:text-left text-xs text-gray-500 dark:text-gray-400">
+                        <i data-lucide="database" class="w-3.5 h-3.5 mr-1.5"></i>
+                        Live, community‑driven catalog
+                    </span>
+                </div>
+            </div>
+
+            <!-- Hero Feature Widgets -->
+            <div class="space-y-4 self-center">
+                <div class="bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-center mb-0 sm:mb-3">
+                        <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            <i data-lucide="grid-3x3" class="w-3.5 h-3.5 mr-1.5"></i>
+                            Discovery Layer
+                        </span>
+                    </div>
+                    <p class="hidden sm:block text-sm text-gray-700 dark:text-gray-200 mb-3">
+                        Browse public NotebookLM projects by topic and intent, not just links.
+                    </p>
+                    <ul class="hidden sm:block space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <li class="flex items-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2"></span>
+                            Curated, high‑signal notebooks
+                        </li>
+                        <li class="flex items-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></span>
+                            Filter by topic &amp; use‑case
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center mb-3">
+                            <i data-lucide="activity" class="w-4 h-4 text-emerald-400 mr-2"></i>
+                            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                Transparent &amp; live
+                            </span>
+                        </div>
+                        <p class="hidden sm:block text-sm text-gray-700 dark:text-gray-200 mb-3">
+                            See how many sources were used per notebook and keep up as new work
+                            is published.
+                        </p>
+                    </div>
+                    <div class="hidden sm:flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-2 mt-1">
+                        <div class="flex items-center">
+                            <i data-lucide="files" class="w-3.5 h-3.5 mr-1.5"></i>
+                            Source‑aware summaries
+                        </div>
+                        <div class="flex items-center">
+                            <i data-lucide="users" class="w-3.5 h-3.5 mr-1.5"></i>
+                            Built for students &amp; pros
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Control Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div class="relative flex-1 max-w-xl flex items-center gap-2">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                    <input type="text" id="searchInput" placeholder="Search curated notebooks..." 
+                           class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition-all">
+                </div>
+                <!-- Filter Toggle Button -->
+                <button onclick="toggleFilterModal()" class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm" title="All Topics">
+                    <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-white dark:bg-darkCard p-1 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <button onclick="setView('grid')" id="gridBtn" class="p-2 rounded-lg active-view transition-all">
+                    <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                </button>
+                <button onclick="setView('row')" id="rowBtn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i data-lucide="list" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Popular Topics (Curated) -->
+        <div class="flex flex-wrap items-center gap-2 mb-4" id="categoryFilters">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mr-2">Trending:</span>
+            <button onclick="filterByCategory('All')" class="px-4 py-1.5 rounded-full bg-blue-600 text-white text-sm font-medium">All</button>
+        </div>
+
+        <!-- Notebook Container -->
+        <div id="notebookContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full flex flex-col items-center py-20 animate-pulse">
+                <i data-lucide="loader-2" class="w-10 h-10 text-blue-500 animate-spin mb-4"></i>
+                <p class="text-gray-500">Syncing with OpenNotebookLMs Cloud...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-gray-500">
+            <i data-lucide="search-x" class="w-16 h-16 mb-4 text-gray-300"></i>
+            <h3 class="text-xl font-semibold">No notebooks found</h3>
+            <p>Try different keywords or browse all topics.</p>
+        </div>
+    </main>
+
+    <!-- My Notebooks Page -->
+    <div id="myNotebooksView" class="hidden max-w-5xl mx-auto px-4 sm:px-6 py-8">
+        <div class="flex items-center mb-6">
+            <button onclick="showHome()" class="mr-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold">Your Notebooks</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Manage visibility of notebooks you have submitted.</p>
+            </div>
+        </div>
+        <div class="mb-4 flex justify-end">
+            <button onclick="handleShareClick()" class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-lg shadow-blue-500/20">
+                <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                New notebook
+            </button>
+        </div>
+        <div id="myNotebooksList" class="space-y-2">
+            <!-- User notebooks populated via app.js -->
+        </div>
+    </div>
+
+    <!-- Create Notebook Page -->
+    <div id="createNotebookView" class="hidden max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div class="flex items-center mb-6">
+            <button onclick="showMyNotebooks()" class="mr-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold">Submit a Notebook</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Share a NotebookLM link for review or keep it private.</p>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
+            <form id="submissionForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">NotebookLM Link</label>
+                    <input type="url" id="fb_url" required placeholder="https://..." class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Title</label>
+                    <input type="text" id="fb_title" maxlength="50" required class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Summary</label>
+                    <textarea id="fb_description" maxlength="300" required placeholder="What is this research about?" class="w-full p-3 h-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="relative sm:col-span-2">
+                        <label class="block text-sm font-semibold mb-1">Topic</label>
+                        <select id="topicSelector" onchange="handleTopicChange()" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                            <option value="General">General</option>
+                            <option value="CUSTOM">+ Custom Topic</option>
+                        </select>
+                        <input type="text" id="fb_custom_category" placeholder="Enter topic..." class="hidden mt-2 w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Visibility</label>
+                    <select id="fb_visibility" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                    </select>
+                </div>
+                <button type="submit" id="submissionSubmitBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30">
+                    Submit for Evaluation
+                </button>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                    Public submissions are reviewed first. Private submissions are saved immediately. The reviewer may edit title, summary, and topic before approval.
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings / Account Page -->
+    <div id="settingsView" class="hidden max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        <div class="flex items-center mb-8">
+            <button onclick="showHome()" class="mr-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+            <h1 class="text-2xl sm:text-3xl font-bold">Account & Settings</h1>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="md:col-span-1 space-y-4">
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-200 dark:border-gray-700 text-center">
+                    <div class="w-20 h-20 bg-blue-600 text-white rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" id="profileInitials">U</div>
+                    <h3 class="font-bold text-lg" id="profileName">User Name</h3>
+                    <p class="text-gray-500 text-sm mb-4" id="profileEmail">user@example.com</p>
+                    <div id="verificationBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold mb-4 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                        <i data-lucide="alert-circle" class="w-3 h-3 mr-1"></i> Unverified
+                    </div>
+                    <button id="verifyBtn" onclick="verifyEmail()" class="w-full py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">Verify Email</button>
+                    <button id="viewMyNotebooksBtn" onclick="showMyNotebooks()" class="hidden mt-2 w-full py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        View Notebooks
+                    </button>
+                </div>
+            </div>
+            
+            <div class="md:col-span-2 space-y-6">
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center"><i data-lucide="settings" class="w-5 h-5 mr-2"></i> General Settings</h2>
+                    <div class="space-y-4">
+                        <div class="py-3 border-b border-gray-100 dark:border-gray-800">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold">Public name</p>
+                                    <p class="text-xs text-gray-500">Shown as the author on shared notebooks</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input id="publicNameInput" type="text" placeholder="e.g. Ojas M."
+                                           class="w-40 sm:w-52 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                    <button type="button" onclick="savePublicName()" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">
+                                        Save
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center text-red-500"><i data-lucide="shield-alert" class="w-5 h-5 mr-2"></i> Security</h2>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="logout()" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors">
+                            Logout
+                        </button>
+                        <button onclick="deleteAccount()" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors">
+                            Delete account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="toggleModal('authModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-2">Sign in to OpenNotebookLMs</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Use email or continue as a guest to browse notebooks.
+            </p>
+            <div class="space-y-3 mb-4">
+                <div>
+                    <label for="auth_email" class="block text-sm font-semibold mb-1">Email</label>
+                    <input id="auth_email" type="email" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                    <label for="auth_password" class="block text-sm font-semibold mb-1">Password</label>
+                    <input id="auth_password" type="password" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+            <div class="space-y-2">
+                <button type="button" onclick="handleEmailAuth('login')" class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors">
+                    Log in
+                </button>
+                <button type="button" onclick="handleEmailAuth('signup')" class="w-full py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold text-sm transition-colors">
+                    Sign up &amp; verify
+                </button>
+                <button type="button" onclick="continueAsGuest()" class="w-full py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Continue as guest
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Topic Discovery Modal -->
+    <div id="topicModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="toggleFilterModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            <h2 class="text-xl font-bold mb-4">All Topics</h2>
+            <div id="allTopicsList" class="flex flex-wrap gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Topics populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- My Notebooks Modal removed in favor of dedicated page -->
+
+    <!-- Alert Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 translate-y-20 opacity-0 bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 px-6 py-4 rounded-2xl shadow-2xl z-[100] transition-all flex items-center">
+        <div id="toastIcon" class="mr-3"></div>
+        <p id="toastMsg" class="font-medium"></p>
+    </div>
+    
+
+    <!-- FIREBASE MODULES -->
+    <script type="module" src="router.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

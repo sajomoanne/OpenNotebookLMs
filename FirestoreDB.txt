@@ -1,0 +1,98 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - user-specific notebooks
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // User notebooks subcollection
+      match /notebooks/{notebookId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && 
+                      request.auth.uid == userId &&
+                      request.resource.data.keys().hasAll(['title', 'description', 'url', 'category', 'ownerId', 'reviewStatus', 'isPublic', 'reviewMessage', 'sources']) &&
+                      request.resource.data.title is string &&
+                      request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 50 &&
+                      request.resource.data.description is string &&
+                      request.resource.data.description.size() > 0 && request.resource.data.description.size() <= 300 &&
+                      request.resource.data.url is string &&
+                      request.resource.data.url.matches('^https://notebooklm\\.google\\.com/notebook/.+') &&
+                      request.resource.data.category is string &&
+                      request.resource.data.category.size() > 0 &&
+                      request.resource.data.ownerId is string &&
+                      request.resource.data.ownerId == request.auth.uid &&
+                      request.resource.data.reviewStatus in ['private', 'pending', 'approved', 'declined'] &&
+                      request.resource.data.isPublic == false &&
+                      request.resource.data.reviewMessage is string &&
+                      request.resource.data.reviewMessage.size() <= 300 &&
+                      request.resource.data.sources == null;
+        
+        allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.ownerId == request.auth.uid &&
+                      (request.resource.data.diff(resource.data.data).affectedKeys().hasOnly(['reviewStatus', 'isPublic']) ||
+                       (request.resource.data.diff(resource.data.data).affectedKeys().hasOnly(['reviewStatus']) && request.resource.data.reviewStatus in ['private', 'pending']));
+      }
+    }
+    
+    // Public notebooks collection
+    match /publicNotebooks/{notebookId} {
+      allow read: if true;
+      
+      allow create, update: if request.auth != null && 
+                           request.auth.uid == resource.data.ownerId;
+      
+      allow delete: if request.auth != null && 
+                    request.auth.uid == resource.data.ownerId;
+      
+      // Ratings subcollection
+      match /ratings/{userId} {
+        allow read: if true;
+        allow write: if request.auth != null && 
+                     request.auth.uid == userId &&
+                     request.auth != null &&
+                     get(/databases/$(database)/documents/publicNotebooks/$(notebookId)).data.isPublic == true &&
+                     get(/databases/$(database)/documents/publicNotebooks/$(notebookId)).data.reviewStatus == 'approved';
+        allow create, update: if request.auth != null && 
+                             request.auth.uid == userId &&
+                             request.resource.data is number &&
+                             request.resource.data >= 1 && request.resource.data <= 5;
+      }
+      
+      // Reports subcollection
+      match /reports/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null && 
+                     request.auth.uid == userId &&
+                     get(/databases/$(database)/documents/publicNotebooks/$(notebookId)).data.isPublic == true &&
+                     get(/databases/$(database)/documents/publicNotebooks/$(notebookId)).data.reviewStatus == 'approved';
+        allow create: if request.auth != null && 
+                     request.auth.uid == userId &&
+                     request.resource.data.keys().hasAll(['reason', 'createdAt']) &&
+                     request.resource.data.reason is string &&
+                     request.resource.data.reason.size() > 0 && request.resource.data.reason.size() <= 500 &&
+                     request.resource.data.createdAt is timestamp;
+      }
+    }
+    
+    // Admin collection - for admin management
+    match /admin/{document} {
+      allow read, write: if request.auth != null && 
+                         (request.auth.token.email == 'sajomoanne@gmail.com' ||
+                          request.auth.token.email == 'maharaojas@gmail.com' ||
+                          request.auth.token.email == 'opennotebooklmsofficial@gmail.com');
+    }
+    
+    // Admin review queue
+    match /reviewQueue/{notebookId} {
+      allow read: if request.auth != null && 
+                   (request.auth.token.email == 'sajomoanne@gmail.com' ||
+                    request.auth.token.email == 'maharaojas@gmail.com' ||
+                    request.auth.token.email == 'opennotebooklmsofficial@gmail.com');
+      allow write: if request.auth != null && 
+                    (request.auth.token.email == 'sajomoanne@gmail.com' ||
+                     request.auth.token.email == 'maharaojas@gmail.com' ||
+                     request.auth.token.email == 'opennotebooklmsofficial@gmail.com');
+    }
+  }
+}

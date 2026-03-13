@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Notebook | OpenNotebookLMs</title>
+    <meta name="description" content="Review and edit details of a submitted notebook.">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="robots" content="noindex, nofollow">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Initial Theme Logic (prevents flash)
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-gray-100 min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 glass-morphism border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-darkBg/80 px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2 min-w-0 flex-1">
+            <div class="bg-blue-600 p-2 rounded-lg shrink-0">
+                <i data-lucide="book-open" class="text-white w-6 h-6"></i>
+            </div>
+            <a href="/" class="text-lg sm:text-2xl font-bold tracking-tight truncate">OpenNotebookLMs</a>
+            <span class="hidden sm:inline-flex bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full ml-2 font-medium uppercase shrink-0">R&D Beta</span>
+        </div>
+        
+        <div class="flex items-center space-x-2 sm:space-x-4 shrink-0">
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <i data-lucide="sun" id="sunIcon" class="w-5 h-5 hidden dark:block"></i>
+                <i data-lucide="moon" id="moonIcon" class="w-5 h-5 block dark:hidden"></i>
+            </button>
+            
+            <div id="authContainer" class="flex items-center">
+                <button id="loginBtn" onclick="toggleModal('authModal')" class="text-xs sm:text-sm font-semibold whitespace-nowrap hover:text-blue-600 transition-colors mr-1 sm:mr-2">Login / Sign up</button>
+                <div id="userAvatar" onclick="handleProfileClick()" class="hidden w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 border border-blue-200 dark:border-blue-800 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Navigation Menu (optional enhancement) -->
+    <div class="md:hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-darkBg px-4 py-2">
+        <div class="flex space-x-4 text-sm">
+            <a href="/" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Home</a>
+            <a href="/my-notebooks" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">My Notebooks</a>
+            <a href="/create" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Create</a>
+            <a href="/settings" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Settings</a>
+        </div>
+    </div>
+
+    <!-- Admin Review Detail Content -->
+    <main data-page-content class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        <div class="flex items-center mb-6">
+            <button onclick="window.router?.redirect('/admin-review')" class="mr-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold">Review Notebook</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Edit details and approve or decline this notebook</p>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="reviewLoadingState" class="text-center py-12">
+            <i data-lucide="loader-2" class="w-10 h-10 text-blue-500 animate-spin mb-4"></i>
+            <p class="text-gray-500">Loading notebook details...</p>
+        </div>
+
+        <!-- Review Form (hidden initially) -->
+        <form id="reviewForm" class="space-y-6 hidden">
+            <!-- Notebook URL -->
+            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <label class="block text-sm font-semibold">NotebookLM URL</label>
+                    <button type="button" onclick="window.open(document.getElementById('review_url').value, '_blank')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                        <i data-lucide="external-link" class="w-4 h-4 mr-1"></i> Open
+                    </button>
+                </div>
+                <input type="url" id="review_url" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+            </div>
+
+            <!-- Editable Fields -->
+            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-lg font-semibold mb-4">Notebook Details</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Title</label>
+                        <div class="relative">
+                            <input type="text" id="review_title" maxlength="50" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="absolute right-3 top-3 text-xs text-gray-500"><span id="titleCount">0</span>/50</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Summary</label>
+                        <div class="relative">
+                            <textarea id="review_description" maxlength="300" rows="3" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                            <span class="absolute right-3 bottom-3 text-xs text-gray-500"><span id="descCount">0</span>/300</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Topic</label>
+                        <input type="text" id="review_category" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Fields -->
+            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-lg font-semibold mb-4">Review Information</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Number of Sources</label>
+                        <input type="number" id="review_sources" min="0" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Count the number of sources used in this NotebookLM</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Review Message</label>
+                        <div class="relative">
+                            <textarea id="review_message" maxlength="300" rows="3" placeholder="Feedback for the user about their submission..." class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                            <span class="absolute right-3 bottom-3 text-xs text-gray-500"><span id="messageCount">0</span>/300</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Actions -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button type="button" onclick="submitReview('approved')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
+                    <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> Approve
+                </button>
+                <button type="button" onclick="submitReview('declined')" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
+                    <i data-lucide="x-circle" class="w-5 h-5 mr-2"></i> Decline
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="toggleModal('authModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-2">Sign in to OpenNotebookLMs</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Use email or continue as a guest to browse notebooks.
+            </p>
+            <div class="space-y-3 mb-4">
+                <div>
+                    <label for="auth_email" class="block text-sm font-semibold mb-1">Email</label>
+                    <input id="auth_email" type="email" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                    <label for="auth_password" class="block text-sm font-semibold mb-1">Password</label>
+                    <input id="auth_password" type="password" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+            <div class="space-y-2">
+                <button type="button" onclick="handleEmailAuth('login')" class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors">
+                    Log in
+                </button>
+                <button type="button" onclick="handleEmailAuth('signup')" class="w-full py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold text-sm transition-colors">
+                    Sign up &amp; verify
+                </button>
+                <button type="button" onclick="continueAsGuest()" class="w-full py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Continue as guest
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 translate-y-20 opacity-0 bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 px-6 py-4 rounded-2xl shadow-2xl z-[100] transition-all flex items-center">
+        <div id="toastIcon" class="mr-3"></div>
+        <p id="toastMsg" class="font-medium"></p>
+    </div>
+
+    <!-- FIREBASE MODULES -->
+    <script type="module" src="router.js"></script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        
+        // Update authentication UI with delay to ensure auth state is ready
+        setTimeout(() => {
+            if (window.updateAuthUI) {
+                window.updateAuthUI();
+            }
+        }, 100);
+    </script>
+        // Load shared components
+        Promise.all([
+            fetch('components/navbar.html').then(response => response.text()),
+            fetch('components/modals.html').then(response => response.text()),
+            fetch('components/toast.html').then(response => response.text())
+        ]).then(([navbar, modals, toast]) => {
+            document.getElementById('navbar-container').innerHTML = navbar;
+            document.getElementById('modals-container').innerHTML = modals;
+            document.getElementById('toast-container').innerHTML = toast;
+            
+            // Initialize Lucide icons
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+            
+            // Update authentication UI with delay to ensure auth state is ready
+            setTimeout(() => {
+                if (window.updateAuthUI) {
+                    window.updateAuthUI();
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
