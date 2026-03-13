@@ -193,12 +193,14 @@ class Router {
         // Update navigation state
         this.updateNavigation(route.component);
 
-        // Check for intended route after login
+        // Check for intended route after login or GitHub Pages redirect
         if (route.component === 'home') {
             const intendedRoute = sessionStorage.getItem('intendedRoute');
-            if (intendedRoute && this.isAuthenticated()) {
+            if (intendedRoute) {
                 sessionStorage.removeItem('intendedRoute');
+                // Navigate to the intended route
                 this.navigate(intendedRoute);
+                return;
             }
         }
     }
