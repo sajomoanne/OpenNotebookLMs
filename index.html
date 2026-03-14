@@ -113,72 +113,46 @@
 
     <main id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <!-- Hero / Mission Section -->
-        <section class="mb-10 grid grid-cols-1 lg:grid-cols-[1.6fr,1.1fr] gap-8 items-center">
-            <div>
-                <div class="flex flex-col lg:flex-row items-start lg:items-center gap-8 lg:gap-12">
-                <div class="flex-1 space-y-6">
-                    <div class="space-y-3">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                            Public directory for NotebookLM
+        <section class="mb-10 grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-8 items-center">
+            <div class="space-y-6">
+                <div class="space-y-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                        Public directory for NotebookLM
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
+                        OpenNotebookLMs: Discover &amp; Share
+                        <span class="block text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-sky-400 to-indigo-500">
+                            AI Research Notebooks
                         </span>
-                        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
-                            OpenNotebookLMs: Discover &amp; Share
-                            <span class="block text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-sky-400 to-indigo-500">
-                                AI Research Notebooks
-                            </span>
-                        </h1>
-                        <p class="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mb-4">
-                            NotebookLM is incredible for private research, but it has no discovery layer.
-                            OpenNotebookLMs turns those private notebooks into a searchable, public gallery of
-                            AI‑augmented research.
-                        </p>
-                        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-2xl mb-6">
-                            Browse curated notebooks across various subjects and topics. Share your studies
-                            and research with the community, and learn from how others synthesize complex
-                            information with AI.
-                        </p>
-                    </div>
-                    
-                    <div class="flex flex-col sm:flex-row sm:flex-wrap items-center sm:items-center gap-3">
-                        <button onclick="handleShareClick()" class="w-full sm:w-auto inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold text-sm sm:text-base shadow-lg shadow-blue-500/30 transition-all">
-                            <i data-lucide="upload-cloud" class="w-4 h-4 mr-2"></i>
-                            Submit your NotebookLM
-                        </button>
-                        <button onclick="scrollToSearch()" class="w-full sm:w-auto inline-flex justify-center items-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-5 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all">
-                            <i data-lucide="search" class="w-4 h-4 mr-2"></i>
-                            Browse Notebooks
-                        </button>
-                        <span class="w-full sm:w-auto flex justify-center sm:justify-start items-center text-center sm:text-left text-xs text-gray-500 dark:text-gray-400">
-                            <i data-lucide="database" class="w-3.5 h-3.5 mr-1.5"></i>
-                            Live, community‑driven catalog
-                        </span>
-                    </div>
+                    </h1>
+                    <p class="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mb-4">
+                        NotebookLM is incredible for private research, but it has no discovery layer.
+                        OpenNotebookLMs turns those private notebooks into a searchable, public gallery of
+                        AI‑augmented research.
+                    </p>
+                    <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-2xl mb-6">
+                        Browse curated notebooks across various subjects and topics. Share your studies
+                        and research with the community, and learn from how others synthesize complex
+                        information with AI.
+                    </p>
                 </div>
             </div>
-
-        <!-- Search & Control Header -->
-        <div id="searchSection" class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div class="relative flex-1 max-w-xl flex items-center gap-2">
-                <div class="relative flex-1">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                    <input type="text" id="searchInput" placeholder="Search curated notebooks..." 
-                           class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition-all">
+            
+            <div class="space-y-4">
+                <button onclick="handleShareClick()" class="w-full inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold text-sm sm:text-base shadow-lg shadow-blue-500/30 transition-all">
+                    <i data-lucide="upload-cloud" class="w-4 h-4 mr-2"></i>
+                    Submit your NotebookLM
+                </button>
+                <button onclick="window.router?.redirect('/search')" class="w-full inline-flex justify-center items-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-5 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all">
+                    <i data-lucide="search" class="w-4 h-4 mr-2"></i>
+                    Browse Notebooks
+                </button>
+                <div class="flex justify-center items-center text-center text-xs text-gray-500 dark:text-gray-400">
+                    <i data-lucide="database" class="w-3.5 h-3.5 mr-1.5"></i>
+                    Live, community‑driven catalog
                 </div>
-                <!-- Filter Toggle Button -->
-                <button onclick="toggleFilterModal()" class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm" title="All Topics">
-                    <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
-                </button>
             </div>
-
-            <div class="flex items-center space-x-2 bg-white dark:bg-darkCard p-1 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <button onclick="setView('grid')" id="gridBtn" class="p-2 rounded-lg active-view transition-all">
-                    <i data-lucide="layout-grid" class="w-5 h-5"></i>
-                </button>
-                <button onclick="setView('row')" id="rowBtn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-                    <i data-lucide="list" class="w-5 h-5"></i>
-                </button>
-            </div>
-        </div>
+        </section>
 
         <!-- Popular Topics (Curated) -->
         <div class="flex flex-wrap items-center gap-2 mb-4" id="categoryFilters">
