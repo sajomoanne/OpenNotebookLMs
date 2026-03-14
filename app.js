@@ -4,9 +4,13 @@ import './router.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
     getAuth,
-    signInAnonymously,
     onAuthStateChanged,
-    signInWithCustomToken,
+    signInAnonymously,
+    sendPasswordResetEmail,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword,
+    updateEmail,
     sendEmailVerification,
     signOut,
     createUserWithEmailAndPassword,
@@ -764,6 +768,20 @@ window.logout = async () => {
     showToast("Logged out", "info");
 };
 
+window.scrollToSearch = () => {
+    const searchSection = document.getElementById('searchSection');
+    if (searchSection) {
+        searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Focus on search input after scrolling
+        setTimeout(() => {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }, 500);
+    }
+};
+
 window.toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
     localStorage.theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
@@ -867,6 +885,133 @@ window.handleEmailAuth = async (mode) => {
             showToast("Email already in use", "error");
         } else {
             showToast(err.message || "Authentication failed", "error");
+        }
+    }
+};
+
+window.handlePasswordReset = async () => {
+    if (!auth) {
+        showToast("Firebase not configured", "error");
+        return;
+    }
+
+    const email = document.getElementById('auth_email').value;
+    if (!email) {
+        showToast("Please enter your email address", "error");
+        return;
+    }
+
+    try {
+        await sendPasswordResetEmail(auth, email);
+        showToast("Password reset email sent! Check your inbox.", "success");
+        toggleModal('authModal');
+    } catch (error) {
+        console.error("Password reset error:", error);
+        showToast(error.message, "error");
+    }
+};
+
+window.showPasswordChangeModal = () => {
+    toggleModal('passwordChangeModal');
+};
+
+window.showEmailChangeModal = () => {
+    toggleModal('emailChangeModal');
+};
+
+window.changePassword = async (event) => {
+    event.preventDefault();
+    
+    if (!auth || !user) {
+        showToast("Not authenticated", "error");
+        return;
+    }
+
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+    if (newPassword !== confirmNewPassword) {
+        showToast("New passwords don't match", "error");
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        showToast("Password must be at least 6 characters", "error");
+        return;
+    }
+
+    try {
+        // Reauthenticate user with current password
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+        
+        // Update password
+        await updatePassword(user, newPassword);
+        
+        showToast("Password updated successfully!", "success");
+        toggleModal('passwordChangeModal');
+        
+        // Clear form
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+    } catch (error) {
+        console.error("Password change error:", error);
+        if (error.code === 'auth/wrong-password') {
+            showToast("Current password is incorrect", "error");
+        } else {
+            showToast(error.message, "error");
+        }
+    }
+};
+
+window.changeEmail = async (event) => {
+    event.preventDefault();
+    
+    if (!auth || !user) {
+        showToast("Not authenticated", "error");
+        return;
+    }
+
+    const password = document.getElementById('emailPassword').value;
+    const newEmail = document.getElementById('newEmail').value;
+
+    if (newEmail === user.email) {
+        showToast("New email is the same as current email", "error");
+        return;
+    }
+
+    try {
+        // Reauthenticate user with password
+        const credential = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(user, credential);
+        
+        // Update email
+        await updateEmail(user, newEmail);
+        
+        // Send verification email
+        await sendEmailVerification(user);
+        
+        showToast("Email updated! Please verify your new email address.", "success");
+        toggleModal('emailChangeModal');
+        
+        // Clear form
+        document.getElementById('emailPassword').value = '';
+        document.getElementById('newEmail').value = '';
+        
+        // Update UI
+        if (window.updateAuthUI) {
+            window.updateAuthUI();
+        }
+    } catch (error) {
+        console.error("Email change error:", error);
+        if (error.code === 'auth/wrong-password') {
+            showToast("Current password is incorrect", "error");
+        } else if (error.code === 'auth/email-already-in-use') {
+            showToast("Email address is already in use", "error");
+        } else {
+            showToast(error.message, "error");
         }
     }
 };
