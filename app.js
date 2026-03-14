@@ -768,20 +768,6 @@ window.logout = async () => {
     showToast("Logged out", "info");
 };
 
-window.scrollToSearch = () => {
-    const searchSection = document.getElementById('searchSection');
-    if (searchSection) {
-        searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Focus on search input after scrolling
-        setTimeout(() => {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.focus();
-            }
-        }, 500);
-    }
-};
-
 window.toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
     localStorage.theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
