@@ -1062,11 +1062,12 @@ window.startReviewSync = () => {
     const notebooksRef = collectionGroup(db, "notebooks");
     const q = query(notebooksRef, where("reviewStatus", "==", "pending"));
     
-    unsubscribeReview = onSnapshot(
-        q,
-        (snapshot) => {
-            reviewQueue = [];
-            snapshot.forEach((notebookDoc) => {
+    try {
+        unsubscribeReview = onSnapshot(
+            q,
+            (snapshot) => {
+                reviewQueue = [];
+                snapshot.forEach((notebookDoc) => {
                 reviewQueue.push({
                     id: notebookDoc.id,
                     userId: notebookDoc.ref.parent.parent.id,
@@ -1082,6 +1083,11 @@ window.startReviewSync = () => {
             renderReviewQueue();
         }
     );
+    } catch (err) {
+        console.error("Review queue setup error:", err);
+        reviewQueue = [];
+        renderReviewQueue();
+    }
 };
 
 window.renderReviewQueue = () => {
@@ -1452,7 +1458,7 @@ document.getElementById("submissionForm")?.addEventListener("submit", async (e) 
     const title = (titleEl?.value || "").trim();
     const description = (descriptionEl?.value || "").trim();
     const url = (urlEl?.value || "").trim();
-    const visibility = visibilityEl?.value === "private" ? "private" : "public";
+    const visibility = document.getElementById("fb_visibility")?.checked ? "public" : "private";
 
     let category = topicSelector?.value || "General";
     if (category === "CUSTOM") {
