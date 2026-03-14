@@ -1652,6 +1652,9 @@ window.db = db;
 window.auth = auth;
 window.user = user;
 
+// Expose functions globally for debugging and manual calls
+window.attachSubmitFormListener = attachSubmitFormListener;
+
 // Add function to manually check auth state
 window.checkAuthState = () => {
     console.log("🔍 Manual auth state check:");
@@ -1678,6 +1681,14 @@ window.populateTopicModal = populateTopicModal;
 window.updateTopicDropdown = updateTopicDropdown;
 window.renderMyNotebooks = renderMyNotebooks;
 window.updateSubmissionButtonLabel = updateSubmissionButtonLabel;
+
+// Initialize page-specific functionality
+window.initializeCreatePage = () => {
+    console.log("🔧 Initializing create page...");
+    attachSubmitFormListener();
+    updateSubmissionButtonLabel();
+    console.log("✅ Create page initialized");
+};
 
 // Attach visibility button listener when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
