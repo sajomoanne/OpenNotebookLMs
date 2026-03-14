@@ -188,8 +188,8 @@ class Router {
             return;
         }
 
-        // Load page content if not already loaded
-        if (route.component !== 'home') {
+        // Load page content - always reload to ensure fresh content
+        if (route.template) {
             await this.loadPageContent(route.template);
         }
 
@@ -249,14 +249,9 @@ class Router {
 
     async loadPageContent(templatePath) {
         try {
-            // For initial page load, don't fetch if we're already on the right file
-            const currentFile = window.location.pathname.endsWith('.html') 
-                ? window.location.pathname 
-                : window.location.pathname + '.html';
-            
-            if (currentFile === '/' + templatePath || (templatePath === 'index.html' && window.location.pathname === '/')) {
-                return; // Already on the right page
-            }
+            // For hash-based routing, always load content to ensure fresh data
+            // The pathname-based check doesn't work with hash routing
+            if (!templatePath) return; // No template to load (404 case)
             
             const response = await fetch(templatePath);
             if (!response.ok) {
