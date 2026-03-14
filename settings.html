@@ -50,6 +50,7 @@
     <div class="md:hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-darkBg px-4 py-2">
         <div class="flex space-x-4 text-sm">
             <a href="/" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Home</a>
+            <a href="/search" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Browse</a>
             <a href="/my-notebooks" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">My Notebooks</a>
             <a href="/create" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Create</a>
             <a href="/settings" data-nav-link class="text-gray-600 hover:text-blue-600 transition-colors">Settings</a>
@@ -104,13 +105,36 @@
                 </div>
                 <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
                     <h2 class="text-xl font-bold mb-4 flex items-center text-red-500"><i data-lucide="shield-alert" class="w-5 h-5 mr-2"></i> Security</h2>
-                    <div class="flex flex-wrap gap-3">
-                        <button id="adminReviewBtn" onclick="window.router?.redirect('/admin-review')" class="hidden px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
-                            <i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i> Review Notebooks
-                        </button>
-                        <button onclick="logout()" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors">
-                            Logout
-                        </button>
+                    <div class="space-y-4">
+                        <div class="py-3 border-b border-gray-100 dark:border-gray-800">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold">Change Password</p>
+                                    <p class="text-xs text-gray-500">Update your account password</p>
+                                </div>
+                                <button onclick="showPasswordChangeModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+                                    Change Password
+                                </button>
+                            </div>
+                        </div>
+                        <div class="py-3 border-b border-gray-100 dark:border-gray-800">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold">Change Email</p>
+                                    <p class="text-xs text-gray-500">Update your account email address</p>
+                                </div>
+                                <button onclick="showEmailChangeModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+                                    Change Email
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-3 pt-3">
+                            <button id="adminReviewBtn" onclick="window.router?.redirect('/admin-review')" class="hidden px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
+                                <i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i> Review Notebooks
+                            </button>
+                            <button onclick="logout()" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors">
+                                Logout
+                            </button>
                         <button onclick="deleteAccount()" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors">
                             Delete account
                         </button>
@@ -126,10 +150,7 @@
             <button onclick="toggleModal('authModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                 <i data-lucide="x"></i>
             </button>
-            <h2 class="text-2xl font-bold mb-2">Sign in to OpenNotebookLMs</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Use email or continue as a guest to browse notebooks.
-            </p>
+            <h2 class="text-2xl font-bold mb-2 text-center">Sign In / Up</h2>
             <div class="space-y-3 mb-4">
                 <div>
                     <label for="auth_email" class="block text-sm font-semibold mb-1">Email</label>
@@ -145,10 +166,10 @@
                     Log in
                 </button>
                 <button type="button" onclick="handleEmailAuth('signup')" class="w-full py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold text-sm transition-colors">
-                    Sign up &amp; verify
+                    Create Account and Verify
                 </button>
-                <button type="button" onclick="continueAsGuest()" class="w-full py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    Continue as guest
+                <button type="button" onclick="handlePasswordReset()" class="w-full py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Forgot Password?
                 </button>
             </div>
         </div>
@@ -158,6 +179,70 @@
     <div id="toast" class="fixed bottom-6 right-6 translate-y-20 opacity-0 bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 px-6 py-4 rounded-2xl shadow-2xl z-[100] transition-all flex items-center">
         <div id="toastIcon" class="mr-3"></div>
         <p id="toastMsg" class="font-medium"></p>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div id="passwordChangeModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="toggleModal('passwordChangeModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-4">Change Password</h2>
+            <form onsubmit="changePassword(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Current Password</label>
+                        <input type="password" id="currentPassword" required class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">New Password</label>
+                        <input type="password" id="newPassword" required minlength="6" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" required minlength="6" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="toggleModal('passwordChangeModal')" class="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">
+                        Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email Change Modal -->
+    <div id="emailChangeModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="toggleModal('emailChangeModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-4">Change Email</h2>
+            <form onsubmit="changeEmail(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Current Password</label>
+                        <input type="password" id="emailPassword" required class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">New Email Address</label>
+                        <input type="email" id="newEmail" required class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="toggleModal('emailChangeModal')" class="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">
+                        Update Email
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- FIREBASE MODULES -->
