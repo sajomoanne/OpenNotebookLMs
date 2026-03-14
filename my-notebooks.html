@@ -64,7 +64,7 @@
             </button>
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold">Your Notebooks</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Manage visibility of notebooks you have submitted.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Manage your uploaded notebooks.</p>
             </div>
         </div>
         <div class="mb-4 flex justify-end">
@@ -84,10 +84,7 @@
             <button onclick="toggleModal('authModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                 <i data-lucide="x"></i>
             </button>
-            <h2 class="text-2xl font-bold mb-2">Sign in to OpenNotebookLMs</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Use email or continue as a guest to browse notebooks.
-            </p>
+            <h2 class="text-2xl font-bold mb-2 text-center">Sign In / Up</h2>
             <div class="space-y-3 mb-4">
                 <div>
                     <label for="auth_email" class="block text-sm font-semibold mb-1">Email</label>
@@ -103,10 +100,10 @@
                     Log in
                 </button>
                 <button type="button" onclick="handleEmailAuth('signup')" class="w-full py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold text-sm transition-colors">
-                    Sign up &amp; verify
+                    Create Account and Verify
                 </button>
-                <button type="button" onclick="continueAsGuest()" class="w-full py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    Continue as guest
+                <button type="button" onclick="handlePasswordReset()" class="w-full py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Forgot Password?
                 </button>
             </div>
         </div>
