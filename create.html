@@ -83,7 +83,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">Topic</label>
-                    <select id="topicSelector" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="topicSelector" onchange="handleTopicChange()" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select a topic</option>
                         <option value="Science">Science</option>
                         <option value="Technology">Technology</option>
@@ -98,11 +98,15 @@
                     <input type="text" id="fb_custom_category" placeholder="Enter custom topic" maxlength="30" class="hidden mt-2 w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold mb-1">Visibility</label>
-                    <select id="fb_visibility" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="private">Private (only you can see)</option>
-                        <option value="public">Submit for public gallery</option>
-                    </select>
+                    <label class="block text-sm font-semibold mb-3">Visibility</label>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Private</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="fb_visibility" class="sr-only peer">
+                            <div class="w-16 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Public</span>
+                    </div>
                 </div>
                 <button type="submit" id="submissionSubmitBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
                     Upload
