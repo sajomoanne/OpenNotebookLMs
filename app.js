@@ -122,6 +122,14 @@ async function initAuth() {
 
     onAuthStateChanged(auth, (u) => {
         user = u;
+        console.log("🔥 Auth state changed - user:", user);
+        console.log("🔥 User logged in:", !!user);
+        console.log("🔥 User email:", user?.email);
+        console.log("🔥 User email verified:", user?.emailVerified);
+        
+        // Update global variables for debugging
+        window.user = user;
+        
         if (!window.__authReady) {
             window.__authReady = true;
             window.dispatchEvent(new Event("opennote:auth-ready"));
@@ -133,8 +141,14 @@ async function initAuth() {
 }
 
 function hasAccount() {
-    // Treat anonymous auth as "guest" (browse-only), not an account.
-    return !!(user && !user.isAnonymous);
+    const result = !!user && !!auth;
+    console.log("🔍 hasAccount() check:", {
+        user: !!user,
+        auth: !!auth,
+        userObject: user,
+        result: result
+    });
+    return result;
 }
 
 // Expose to router.js auth guard.
@@ -1614,6 +1628,25 @@ document.getElementById("submissionForm")?.addEventListener("submit", async (e) 
 window.db = db;
 window.auth = auth;
 window.user = user;
+
+// Add function to manually check auth state
+window.checkAuthState = () => {
+    console.log("🔍 Manual auth state check:");
+    console.log("🔍 window.user:", window.user);
+    console.log("🔍 window.auth:", window.auth);
+    console.log("🔍 currentUser:", auth?.currentUser);
+    console.log("🔍 hasAccount():", hasAccount());
+    
+    // Try to get current user directly
+    const currentUser = auth?.currentUser;
+    if (currentUser) {
+        console.log("✅ Current user found:", currentUser.email);
+        window.user = currentUser;
+        console.log("🔥 Updated window.user to current user");
+    } else {
+        console.log("❌ No current user found in auth");
+    }
+};
 
 // Expose functions used by router.js page initializers.
 window.filterAndRender = filterAndRender;
