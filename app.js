@@ -1720,24 +1720,23 @@ window.updateSubmissionButtonLabel = updateSubmissionButtonLabel;
 
 // Handle author dropdown change
 window.handleAuthorChange = () => {
-const authorSelect = document.getElementById("fb_author");
-const customInput = document.getElementById("authorOtherInput");
+    const authorSelect = document.getElementById("fb_author");
+    const customInput = document.getElementById("authorOtherInput");
     
-if (authorSelect && customInput) {
-    if (authorSelect.value === "other") {
-        customInput.classList.remove("hidden");
-    } else {
-        customInput.classList.add("hidden");
+    if (authorSelect && customInput) {
+        if (authorSelect.value === "other") {
+            customInput.classList.remove("hidden");
+        } else {
+            customInput.classList.add("hidden");
+        }
     }
-}
 };
 
 // Initialize page-specific functionality
 window.initializeCreatePage = () => {
-console.log("🔧 Initializing create page...");
-attachSubmitFormListener();
-updateSubmissionButtonLabel();
-console.log("✅ Create page initialized");
+    console.log("🔧 Initializing create page...");
+    attachSubmitFormListener();
+    updateSubmissionButtonLabel();
     console.log("✅ Create page initialized");
 };
 
