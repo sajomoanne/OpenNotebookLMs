@@ -36,7 +36,9 @@ import {
     where,
     orderBy,
     limit,
-    Timestamp
+    Timestamp,
+    update,
+    ref
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Global State
@@ -1503,6 +1505,9 @@ function attachSubmitFormListener() {
             const topicSelector = document.getElementById("topicSelector");
             const customTopicEl = document.getElementById("fb_custom_category");
             const visibilityEl = document.getElementById("fb_visibility");
+            const authorSelect = document.getElementById("fb_author");
+            const authorCustomEl = document.getElementById("fb_author_custom");
+            const sourcesEl = document.getElementById("fb_sources");
 
             console.log("🔍 Form elements found:", {
                 title: !!titleEl,
@@ -1510,7 +1515,10 @@ function attachSubmitFormListener() {
                 url: !!urlEl,
                 topicSelector: !!topicSelector,
                 customTopicEl: !!customTopicEl,
-                visibilityEl: !!visibilityEl
+                visibilityEl: !!visibilityEl,
+                authorSelect: !!authorSelect,
+                authorCustomEl: !!authorCustomEl,
+                sourcesEl: !!sourcesEl
             });
 
             const title = (titleEl?.value || "").trim();
@@ -1518,7 +1526,18 @@ function attachSubmitFormListener() {
             const url = (urlEl?.value || "").trim();
             const visibility = document.getElementById("fb_visibility")?.checked ? "public" : "private";
 
-            console.log("🔍 Form data collected:", { title, description, url, visibility });
+            // Handle author field
+            let author = "John Doe"; // Default placeholder
+            if (authorSelect?.value === "me") {
+                author = user?.displayName || user?.email || "Anonymous User";
+            } else if (authorSelect?.value === "other" && authorCustomEl) {
+                author = (authorCustomEl?.value || "").trim() || "John Doe";
+            }
+
+            // Handle sources field
+            const sources = parseInt(sourcesEl?.value) || 0;
+
+            console.log("🔍 Form data collected:", { title, description, url, visibility, author, sources });
 
             let category = topicSelector?.value || "General";
             if (category === "CUSTOM") {
@@ -1585,7 +1604,8 @@ function attachSubmitFormListener() {
                     description,
                     url: safeUrl,
                     category,
-                    sources: null,
+                    author,
+                    sources,
                     isPublic: false,
                     reviewStatus: visibility === "private" ? "private" : "pending",
                     reviewMessage:
@@ -1682,11 +1702,26 @@ window.updateTopicDropdown = updateTopicDropdown;
 window.renderMyNotebooks = renderMyNotebooks;
 window.updateSubmissionButtonLabel = updateSubmissionButtonLabel;
 
+// Handle author dropdown change
+window.handleAuthorChange = () => {
+const authorSelect = document.getElementById("fb_author");
+const customInput = document.getElementById("authorOtherInput");
+    
+if (authorSelect && customInput) {
+    if (authorSelect.value === "other") {
+        customInput.classList.remove("hidden");
+    } else {
+        customInput.classList.add("hidden");
+    }
+}
+};
+
 // Initialize page-specific functionality
 window.initializeCreatePage = () => {
-    console.log("🔧 Initializing create page...");
-    attachSubmitFormListener();
-    updateSubmissionButtonLabel();
+console.log("🔧 Initializing create page...");
+attachSubmitFormListener();
+updateSubmissionButtonLabel();
+console.log("✅ Create page initialized");
     console.log("✅ Create page initialized");
 };
 
