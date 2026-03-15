@@ -37,8 +37,7 @@ import {
     orderBy,
     limit,
     Timestamp,
-    update,
-    ref
+    update
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Global State
@@ -644,42 +643,30 @@ async function requestPublicReview(notebook) {
     if (!db || !hasAccount() || !notebook?.id) return;
 
     try {
-        await update(ref(db, `users/${user.uid}/notebooks/${notebook.id}`), {
+        await updateDoc(doc(db, "users", user.uid, "notebooks", notebook.id), {
             isPublic: false,
             reviewStatus: "pending",
             reviewMessage: "Awaiting reviewer approval"
         });
-        await remove(ref(db, `publicNotebooks/${notebook.id}`)).catch(() => {
+        await deleteDoc(doc(db, "publicNotebooks", notebook.id)).catch(() => {
             // ignore if missing or restricted
         });
 
         showToast("Sent for review", "success");
     } catch (err) {
-        console.error(err);
-        showToast("Failed to send for review", "error");
     }
-}
 
-async function makeNotebookPrivate(notebook) {
-    if (!db || !hasAccount() || !notebook?.id) return;
-
-    try {
-        await update(ref(db, `users/${user.uid}/notebooks/${notebook.id}`), {
-            isPublic: false
-        });
-        await remove(ref(db, `publicNotebooks/${notebook.id}`)).catch(() => {
-            // ignore if missing or restricted
-        });
-
-        showToast("Notebook is now private", "success");
-    } catch (err) {
-        console.error(err);
-        showToast("Failed to update visibility", "error");
+    function statusClass(notebook) {
+        const status = notebook.reviewStatus || "pending";
+        if (status === "approved" && notebook.isPublic === true) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
+        if (status === "declined") return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
+        if (status === "private" || notebook.isPublic !== true) return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300";
     }
-}
 
-async function submitRating(notebookId) {
-    if (!notebookId || !db) return;
+    async function renderMyNotebooks() {
+        const list = document.getElementById("myNotebooksList");
+        if (!list) return;
     if (!user) {
         showToast("Log in to rate notebooks", "info");
         window.toggleModal("authModal");
@@ -702,7 +689,7 @@ async function submitRating(notebookId) {
     }
 
     try {
-        await set(ref(db, `publicNotebooks/${notebookId}/ratings/${user.uid}`), rating);
+        await setDoc(doc(db, "publicNotebooks", notebookId, "ratings", user.uid), rating);
         showToast("Rating submitted", "success");
     } catch (err) {
         console.error(err);
@@ -733,7 +720,7 @@ async function submitReport(notebookId) {
     }
 
     try {
-        await set(ref(db, `publicNotebooks/${notebookId}/reports/${user.uid}`), {
+        await setDoc(doc(db, "publicNotebooks", notebookId, "reports", user.uid), {
             reason: trimmedReason,
             createdAt: Date.now()
         });
@@ -1750,11 +1737,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 100);
 });
 
-document.getElementById("searchInput")?.addEventListener("input", filterAndRender);
-window.currentView = "grid";
-renderCategoryFilters();
-filterAndRender();
-populateTopicModal();
-updateTopicDropdown();
-renderMyNotebooks();
-lucide?.createIcons?.();
+// Initialize app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize search functionality
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) {
+        searchInput.addEventListener("input", filterAndRender);
+    }
+    
+    // Set initial view state
+    window.currentView = "grid";
+    
+    // Initialize UI components
+    renderCategoryFilters();
+    filterAndRender();
+    populateTopicModal();
+    updateTopicDropdown();
+    renderMyNotebooks();
+    lucide?.createIcons?.();
+});
+}
