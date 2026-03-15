@@ -481,6 +481,7 @@ function renderNotebooks(data) {
                         <h3 class="font-bold text-lg mb-2 line-clamp-2">${safeTitle}</h3>
                         <p class="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-3">${safeDescription}</p>
                         <div class="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            <span>${escapeHtml(nb.author || "Unknown")}</span>
                             <span>${sourceLabel(nb.sources)}</span>
                             <span>${ratingLabel(nb.ratingAverage, nb.ratingCount, nb.ratings)}</span>
                         </div>
@@ -502,6 +503,8 @@ function renderNotebooks(data) {
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${safeDescription}</p>
                         <div class="flex items-center space-x-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-2">
                             <span>${safeCategory}</span>
+                            <span class="text-gray-200 dark:text-gray-700">|</span>
+                            <span>${escapeHtml(nb.author || "Unknown")}</span>
                             <span class="text-gray-200 dark:text-gray-700">|</span>
                             <span>${sourceLabel(nb.sources)}</span>
                             <span class="text-gray-200 dark:text-gray-700">|</span>
@@ -584,7 +587,7 @@ function renderMyNotebooks() {
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="min-w-0 w-full">
                     <p class="font-semibold truncate">${escapeHtml(nb.title || "Untitled notebook")}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${escapeHtml(nb.category || "General")} • ${sourceLabel(nb.sources)}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${escapeHtml(nb.category || "General")} • ${escapeHtml(nb.author || "Unknown")} • ${sourceLabel(nb.sources)}</p>
                 </div>
                 <span class="self-start sm:self-auto px-2.5 py-1 rounded-lg text-xs font-semibold ${statusClass(nb)}">${escapeHtml(label)}</span>
             </div>
@@ -1206,6 +1209,7 @@ window.openReviewDetail = async (notebookId, userId) => {
             document.getElementById('review_title').value = currentReviewNotebook.title || '';
             document.getElementById('review_description').value = currentReviewNotebook.description || '';
             document.getElementById('review_category').value = currentReviewNotebook.category || '';
+            document.getElementById('review_author').value = currentReviewNotebook.author || '';
             document.getElementById('review_sources').value = currentReviewNotebook.sources || '';
             document.getElementById('review_message').value = currentReviewNotebook.reviewMessage || '';
             
@@ -1249,6 +1253,7 @@ window.submitReview = async (decision) => {
     const title = document.getElementById('review_title').value.trim();
     const description = document.getElementById('review_description').value.trim();
     const category = document.getElementById('review_category').value.trim();
+    const author = document.getElementById('review_author').value.trim();
     const sources = parseInt(document.getElementById('review_sources').value) || 0;
     const message = document.getElementById('review_message').value.trim();
     
@@ -1276,6 +1281,7 @@ window.submitReview = async (decision) => {
             title,
             description,
             category,
+            author,
             sources,
             reviewMessage: message || (decision === 'approved' ? 'Approved for public display' : 'Not approved at this time'),
             reviewStatus: decision,
@@ -1288,12 +1294,22 @@ window.submitReview = async (decision) => {
         
         // If approved, also add to public notebooks
         if (decision === 'approved') {
-            const publicRef = doc(db, "publicNotebooks", currentReviewNotebook.id);
-            await setDoc(publicRef, {
+            const publicNotebookData = {
                 ...currentReviewNotebook,
-                ...updateData,
-                ownerId: currentReviewNotebook.userId
-            });
+                title,
+                description,
+                category,
+                author,
+                sources,
+                isPublic: true,
+                reviewStatus: 'approved',
+                reviewMessage: message || 'Approved for public display',
+                reviewedAt: Timestamp.now(),
+                reviewedBy: user.email
+            };
+            
+            const publicRef = doc(db, "publicNotebooks", currentReviewNotebook.id);
+            await setDoc(publicRef, publicNotebookData);
         }
         
         showToast(`Notebook ${decision} successfully! 🎉`, "success");
@@ -1727,19 +1743,3 @@ console.log("✅ Create page initialized");
 
 // Attach visibility button listener when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        const visibilityEl = document.getElementById("fb_visibility");
-        if (visibilityEl) {
-            visibilityEl.addEventListener("change", updateSubmissionButtonLabel);
-        }
-    }, 100);
-});
-
-document.getElementById("searchInput")?.addEventListener("input", filterAndRender);
-window.currentView = "grid";
-renderCategoryFilters();
-filterAndRender();
-populateTopicModal();
-updateTopicDropdown();
-renderMyNotebooks();
-lucide?.createIcons?.();
