@@ -1743,3 +1743,19 @@ console.log("✅ Create page initialized");
 
 // Attach visibility button listener when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const visibilityEl = document.getElementById("fb_visibility");
+        if (visibilityEl) {
+            visibilityEl.addEventListener("change", updateSubmissionButtonLabel);
+        }
+    }, 100);
+});
+
+document.getElementById("searchInput")?.addEventListener("input", filterAndRender);
+window.currentView = "grid";
+renderCategoryFilters();
+filterAndRender();
+populateTopicModal();
+updateTopicDropdown();
+renderMyNotebooks();
+lucide?.createIcons?.();
