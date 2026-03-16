@@ -639,12 +639,12 @@ async function requestPublicReview(notebook) {
     if (!db || !hasAccount() || !notebook?.id) return;
 
     try {
-        await update(ref(db, `users/${user.uid}/notebooks/${notebook.id}`), {
+        await updateDoc(doc(db, `users/${user.uid}/notebooks/${notebook.id}`), {
             isPublic: false,
             reviewStatus: "pending",
             reviewMessage: "Awaiting reviewer approval"
         });
-        await remove(ref(db, `publicNotebooks/${notebook.id}`)).catch(() => {
+        await deleteDoc(doc(db, `publicNotebooks/${notebook.id}`)).catch(() => {
             // ignore if missing or restricted
         });
 
