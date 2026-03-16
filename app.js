@@ -36,9 +36,7 @@ import {
     where,
     orderBy,
     limit,
-    Timestamp,
-    update,
-    ref
+    Timestamp
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Global State
@@ -481,7 +479,6 @@ function renderNotebooks(data) {
                         <h3 class="font-bold text-lg mb-2 line-clamp-2">${safeTitle}</h3>
                         <p class="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-3">${safeDescription}</p>
                         <div class="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
-                            <span>${escapeHtml(nb.author || "Unknown")}</span>
                             <span>${sourceLabel(nb.sources)}</span>
                             <span>${ratingLabel(nb.ratingAverage, nb.ratingCount, nb.ratings)}</span>
                         </div>
@@ -503,8 +500,6 @@ function renderNotebooks(data) {
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${safeDescription}</p>
                         <div class="flex items-center space-x-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-2">
                             <span>${safeCategory}</span>
-                            <span class="text-gray-200 dark:text-gray-700">|</span>
-                            <span>${escapeHtml(nb.author || "Unknown")}</span>
                             <span class="text-gray-200 dark:text-gray-700">|</span>
                             <span>${sourceLabel(nb.sources)}</span>
                             <span class="text-gray-200 dark:text-gray-700">|</span>
@@ -587,7 +582,7 @@ function renderMyNotebooks() {
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="min-w-0 w-full">
                     <p class="font-semibold truncate">${escapeHtml(nb.title || "Untitled notebook")}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${escapeHtml(nb.category || "General")} • ${escapeHtml(nb.author || "Unknown")} • ${sourceLabel(nb.sources)}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${escapeHtml(nb.category || "General")} • ${sourceLabel(nb.sources)}</p>
                 </div>
                 <span class="self-start sm:self-auto px-2.5 py-1 rounded-lg text-xs font-semibold ${statusClass(nb)}">${escapeHtml(label)}</span>
             </div>
@@ -1209,7 +1204,6 @@ window.openReviewDetail = async (notebookId, userId) => {
             document.getElementById('review_title').value = currentReviewNotebook.title || '';
             document.getElementById('review_description').value = currentReviewNotebook.description || '';
             document.getElementById('review_category').value = currentReviewNotebook.category || '';
-            document.getElementById('review_author').value = currentReviewNotebook.author || '';
             document.getElementById('review_sources').value = currentReviewNotebook.sources || '';
             document.getElementById('review_message').value = currentReviewNotebook.reviewMessage || '';
             
@@ -1253,7 +1247,6 @@ window.submitReview = async (decision) => {
     const title = document.getElementById('review_title').value.trim();
     const description = document.getElementById('review_description').value.trim();
     const category = document.getElementById('review_category').value.trim();
-    const author = document.getElementById('review_author').value.trim();
     const sources = parseInt(document.getElementById('review_sources').value) || 0;
     const message = document.getElementById('review_message').value.trim();
     
@@ -1281,7 +1274,6 @@ window.submitReview = async (decision) => {
             title,
             description,
             category,
-            author,
             sources,
             reviewMessage: message || (decision === 'approved' ? 'Approved for public display' : 'Not approved at this time'),
             reviewStatus: decision,
@@ -1294,22 +1286,12 @@ window.submitReview = async (decision) => {
         
         // If approved, also add to public notebooks
         if (decision === 'approved') {
-            const publicNotebookData = {
-                ...currentReviewNotebook,
-                title,
-                description,
-                category,
-                author,
-                sources,
-                isPublic: true,
-                reviewStatus: 'approved',
-                reviewMessage: message || 'Approved for public display',
-                reviewedAt: Timestamp.now(),
-                reviewedBy: user.email
-            };
-            
             const publicRef = doc(db, "publicNotebooks", currentReviewNotebook.id);
-            await setDoc(publicRef, publicNotebookData);
+            await setDoc(publicRef, {
+                ...currentReviewNotebook,
+                ...updateData,
+                ownerId: currentReviewNotebook.userId
+            });
         }
         
         showToast(`Notebook ${decision} successfully! 🎉`, "success");
@@ -1521,9 +1503,6 @@ function attachSubmitFormListener() {
             const topicSelector = document.getElementById("topicSelector");
             const customTopicEl = document.getElementById("fb_custom_category");
             const visibilityEl = document.getElementById("fb_visibility");
-            const authorSelect = document.getElementById("fb_author");
-            const authorCustomEl = document.getElementById("fb_author_custom");
-            const sourcesEl = document.getElementById("fb_sources");
 
             console.log("🔍 Form elements found:", {
                 title: !!titleEl,
@@ -1531,10 +1510,7 @@ function attachSubmitFormListener() {
                 url: !!urlEl,
                 topicSelector: !!topicSelector,
                 customTopicEl: !!customTopicEl,
-                visibilityEl: !!visibilityEl,
-                authorSelect: !!authorSelect,
-                authorCustomEl: !!authorCustomEl,
-                sourcesEl: !!sourcesEl
+                visibilityEl: !!visibilityEl
             });
 
             const title = (titleEl?.value || "").trim();
@@ -1542,18 +1518,7 @@ function attachSubmitFormListener() {
             const url = (urlEl?.value || "").trim();
             const visibility = document.getElementById("fb_visibility")?.checked ? "public" : "private";
 
-            // Handle author field
-            let author = "John Doe"; // Default placeholder
-            if (authorSelect?.value === "me") {
-                author = user?.displayName || user?.email || "Anonymous User";
-            } else if (authorSelect?.value === "other" && authorCustomEl) {
-                author = (authorCustomEl?.value || "").trim() || "John Doe";
-            }
-
-            // Handle sources field
-            const sources = parseInt(sourcesEl?.value) || 0;
-
-            console.log("🔍 Form data collected:", { title, description, url, visibility, author, sources });
+            console.log("🔍 Form data collected:", { title, description, url, visibility });
 
             let category = topicSelector?.value || "General";
             if (category === "CUSTOM") {
@@ -1620,8 +1585,7 @@ function attachSubmitFormListener() {
                     description,
                     url: safeUrl,
                     category,
-                    author,
-                    sources,
+                    sources: null,
                     isPublic: false,
                     reviewStatus: visibility === "private" ? "private" : "pending",
                     reviewMessage:
@@ -1688,9 +1652,6 @@ window.db = db;
 window.auth = auth;
 window.user = user;
 
-// Expose functions globally for debugging and manual calls
-window.attachSubmitFormListener = attachSubmitFormListener;
-
 // Add function to manually check auth state
 window.checkAuthState = () => {
     console.log("🔍 Manual auth state check:");
@@ -1718,28 +1679,21 @@ window.updateTopicDropdown = updateTopicDropdown;
 window.renderMyNotebooks = renderMyNotebooks;
 window.updateSubmissionButtonLabel = updateSubmissionButtonLabel;
 
-// Handle author dropdown change
-window.handleAuthorChange = () => {
-const authorSelect = document.getElementById("fb_author");
-const customInput = document.getElementById("authorOtherInput");
-    
-if (authorSelect && customInput) {
-    if (authorSelect.value === "other") {
-        customInput.classList.remove("hidden");
-    } else {
-        customInput.classList.add("hidden");
-    }
-}
-};
-
-// Initialize page-specific functionality
-window.initializeCreatePage = () => {
-console.log("🔧 Initializing create page...");
-attachSubmitFormListener();
-updateSubmissionButtonLabel();
-console.log("✅ Create page initialized");
-    console.log("✅ Create page initialized");
-};
-
 // Attach visibility button listener when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const visibilityEl = document.getElementById("fb_visibility");
+        if (visibilityEl) {
+            visibilityEl.addEventListener("change", updateSubmissionButtonLabel);
+        }
+    }, 100);
+});
+
+document.getElementById("searchInput")?.addEventListener("input", filterAndRender);
+window.currentView = "grid";
+renderCategoryFilters();
+filterAndRender();
+populateTopicModal();
+updateTopicDropdown();
+renderMyNotebooks();
+lucide?.createIcons?.();

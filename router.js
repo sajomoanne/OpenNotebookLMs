@@ -576,27 +576,24 @@ class Router {
         }
     }
 
-    initializeCreatePage() {
-        // Create page initialization
-        if (window.attachSubmitFormListener) {
-            window.attachSubmitFormListener();
-        }
-        if (window.updateSubmissionButtonLabel) {
-            window.updateSubmissionButtonLabel();
-        }
-    }
-
     initializeMyNotebooksPage() {
         // My Notebooks page initialization
         if (window.renderMyNotebooks) {
             window.renderMyNotebooks();
+        }
     }
-    if (window.updateTopicDropdown) {
-        window.updateTopicDropdown();
-    }
-}
 
-initializeSettingsPage() {
+    initializeCreatePage() {
+        // Create page initialization
+        if (window.updateSubmissionButtonLabel) {
+            window.updateSubmissionButtonLabel();
+        }
+        if (window.updateTopicDropdown) {
+            window.updateTopicDropdown();
+        }
+    }
+
+    initializeSettingsPage() {
         // Settings page initialization
         if (window.updateAuthUI) {
             window.updateAuthUI();
@@ -613,6 +610,9 @@ initializeSettingsPage() {
         }
         if (window.populateTopicModal) {
             window.populateTopicModal();
+        }
+        if (window.updateAuthUI) {
+            window.updateAuthUI();
         }
     }
 
