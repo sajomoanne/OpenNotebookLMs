@@ -1118,7 +1118,7 @@ window.startReviewSync = () => {
                 for (const userDoc of usersSnapshot.docs) {
                     const userId = userDoc.id;
                     const notebooksRef = collection(db, "users", userId, "notebooks");
-                    const notebooksQuery = query(notebooksRef, where("reviewStatus", "==", currentReviewFilter || "pending"));
+                    const notebooksQuery = query(notebooksRef);
                     
                     try {
                         const notebooksSnapshot = await getDocs(notebooksQuery);
@@ -1156,7 +1156,14 @@ window.renderReviewQueue = () => {
     const emptyState = document.getElementById("emptyReviewState");
     if (!list || !emptyState) return;
 
+    console.log("🔍 Rendering review queue:");
+    console.log("🔍 Total notebooks in queue:", reviewQueue.length);
+    console.log("🔍 Current filter:", currentReviewFilter);
+
     const filtered = reviewQueue.filter(nb => (nb.reviewStatus || "pending") === currentReviewFilter);
+    
+    console.log("🔍 Notebooks after filtering:", filtered.length);
+    console.log("🔍 Notebook statuses:", reviewQueue.map(nb => ({ id: nb.id, status: nb.reviewStatus })));
     
     if (!filtered.length) {
         list.classList.add("hidden");
