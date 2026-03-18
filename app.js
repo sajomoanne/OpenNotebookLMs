@@ -1087,7 +1087,17 @@ window.handleProfileClick = () => {
 
 // Admin Review Functions
 window.startReviewSync = () => {
-    if (!db || !isAdmin()) return;
+    if (!db) return;
+    
+    // Add early admin verification
+    if (!isAdmin()) {
+        console.error("Access denied: User is not an admin");
+        showToast("Access denied: Admin privileges required", "error");
+        reviewQueue = [];
+        renderReviewQueue();
+        return;
+    }
+    
     if (unsubscribeReview) {
         unsubscribeReview();
         unsubscribeReview = null;
@@ -1095,7 +1105,7 @@ window.startReviewSync = () => {
 
     // Use collection group query to get all notebooks across all users
     const notebooksRef = collectionGroup(db, "notebooks");
-    const q = query(notebooksRef, where("reviewStatus", "==", "pending"));
+    const q = query(notebooksRef, where("reviewStatus", "==", currentReviewFilter || "pending"));
     
     try {
         unsubscribeReview = onSnapshot(
@@ -1130,7 +1140,7 @@ window.renderReviewQueue = () => {
     const emptyState = document.getElementById("emptyReviewState");
     if (!list || !emptyState) return;
 
-    const filtered = reviewQueue.filter(nb => nb.reviewStatus === currentReviewFilter);
+    const filtered = reviewQueue.filter(nb => (nb.reviewStatus || "pending") === currentReviewFilter);
     
     if (!filtered.length) {
         list.classList.add("hidden");
@@ -1141,24 +1151,47 @@ window.renderReviewQueue = () => {
     list.classList.remove("hidden");
     emptyState.classList.add("hidden");
 
-    list.innerHTML = filtered.map(nb => `
-        <div class="bg-white dark:bg-darkCard rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-shadow">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="flex-1">
-                    <h3 class="font-semibold text-lg mb-1">${escapeHtml(nb.title)}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(nb.description)}</p>
-                    <div class="flex items-center gap-4 text-xs text-gray-500">
-                        <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">${escapeHtml(nb.category)}</span>
-                        <span>Submitted by: ${escapeHtml(nb.userEmail || nb.userId)}</span>
-                        <span>${nb.createdAt?.toDate()?.toLocaleDateString() || 'Unknown date'}</span>
-                    </div>
+    list.innerHTML = "";
+
+    filtered.forEach((nb) => {
+        const status = nb.reviewStatus || "pending";
+        const label = getStatusLabel(nb);
+        const submissionDate = nb.createdAt?.toDate()?.toLocaleDateString() || 'Unknown date';
+
+        const item = document.createElement("div");
+        item.className = "border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-darkBg/50 hover:shadow-lg transition-shadow";
+        item.innerHTML = `
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="min-w-0 w-full">
+                    <p class="font-semibold truncate">${escapeHtml(nb.title || "Untitled notebook")}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${escapeHtml(nb.category || "General")} • ${sourceLabel(nb.sources)}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Submitted by: ${escapeHtml(nb.userEmail || nb.userId)} • ${submissionDate}</p>
                 </div>
-                <button onclick="window.openReviewDetail('${nb.id}', '${nb.userId}')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Review
+                <span class="self-start sm:self-auto px-2.5 py-1 rounded-lg text-xs font-semibold ${statusClass(nb)}">${escapeHtml(label)}</span>
+            </div>
+            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 truncate">${escapeHtml(nb.url || "")}</div>
+            <div class="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <button type="button" class="open-notebook w-full sm:w-auto text-center px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                    Open
+                </button>
+                <button type="button" onclick="window.openReviewDetail('${nb.id}', '${nb.userId}')" class="w-full sm:w-auto px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors">
+                    ${status === 'pending' ? 'Review' : 'View'}
                 </button>
             </div>
-        </div>
-    `).join('');
+        `;
+
+        const openBtn = item.querySelector(".open-notebook");
+        openBtn.addEventListener("click", () => {
+            const safeUrl = sanitizeNotebookUrl(nb.url || "");
+            if (!safeUrl) {
+                showToast("Invalid notebook URL", "error");
+                return;
+            }
+            window.open(safeUrl, "_blank", "noopener,noreferrer");
+        });
+
+        list.appendChild(item);
+    });
 
     lucide.createIcons();
 };
@@ -1178,7 +1211,8 @@ window.filterReviewQueue = (filter) => {
         activeTab.classList.remove('text-gray-600', 'dark:text-gray-300');
     }
     
-    renderReviewQueue();
+    // Restart sync with new filter
+    startReviewSync();
 };
 
 window.openReviewDetail = async (notebookId, userId) => {
