@@ -1103,31 +1103,47 @@ window.startReviewSync = () => {
         unsubscribeReview = null;
     }
 
-    // Use collection group query to get all notebooks across all users
-    const notebooksRef = collectionGroup(db, "notebooks");
-    const q = query(notebooksRef, where("reviewStatus", "==", currentReviewFilter || "pending"));
+    // Query all users and their notebooks individually to avoid collectionGroup index requirements
+    const usersRef = collection(db, "users");
+    const q = query(usersRef);
     
     try {
         unsubscribeReview = onSnapshot(
             q,
-            (snapshot) => {
+            async (usersSnapshot) => {
                 reviewQueue = [];
-                snapshot.forEach((notebookDoc) => {
-                reviewQueue.push({
-                    id: notebookDoc.id,
-                    userId: notebookDoc.ref.parent.parent.id,
-                    userEmail: notebookDoc.ref.parent.parent.id,
-                    ...notebookDoc.data()
-                });
-            });
-            renderReviewQueue();
-        },
-        (err) => {
-            console.error("Review queue sync error:", err);
-            reviewQueue = [];
-            renderReviewQueue();
-        }
-    );
+                const allNotebooks = [];
+                
+                // For each user, get their notebooks
+                for (const userDoc of usersSnapshot.docs) {
+                    const userId = userDoc.id;
+                    const notebooksRef = collection(db, "users", userId, "notebooks");
+                    const notebooksQuery = query(notebooksRef, where("reviewStatus", "==", currentReviewFilter || "pending"));
+                    
+                    try {
+                        const notebooksSnapshot = await getDocs(notebooksQuery);
+                        notebooksSnapshot.forEach((notebookDoc) => {
+                            allNotebooks.push({
+                                id: notebookDoc.id,
+                                userId: userId,
+                                userEmail: userId,
+                                ...notebookDoc.data()
+                            });
+                        });
+                    } catch (err) {
+                        console.warn(`Error fetching notebooks for user ${userId}:`, err);
+                    }
+                }
+                
+                reviewQueue = allNotebooks;
+                renderReviewQueue();
+            },
+            (err) => {
+                console.error("Review queue sync error:", err);
+                reviewQueue = [];
+                renderReviewQueue();
+            }
+        );
     } catch (err) {
         console.error("Review queue setup error:", err);
         reviewQueue = [];
