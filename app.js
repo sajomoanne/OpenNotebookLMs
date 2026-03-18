@@ -1111,29 +1111,52 @@ window.startReviewSync = () => {
         unsubscribeReview = onSnapshot(
             q,
             async (usersSnapshot) => {
+                console.log("🔍 Starting admin review sync...");
+                console.log("🔍 Users found:", usersSnapshot.docs.length);
+                console.log("🔍 User IDs:", usersSnapshot.docs.map(doc => doc.id));
+                console.log("🔍 Database object:", db);
+                console.log("🔍 Admin status:", isAdmin());
+                
                 reviewQueue = [];
                 const allNotebooks = [];
                 
                 // For each user, get their notebooks
                 for (const userDoc of usersSnapshot.docs) {
                     const userId = userDoc.id;
+                    console.log(`🔍 Processing user: ${userId}`);
+                    
                     const notebooksRef = collection(db, "users", userId, "notebooks");
                     const notebooksQuery = query(notebooksRef);
                     
                     try {
+                        console.log(`🔍 Querying notebooks for user ${userId}...`);
                         const notebooksSnapshot = await getDocs(notebooksQuery);
+                        console.log(`🔍 Notebooks found for user ${userId}:`, notebooksSnapshot.docs.length);
+                        
                         notebooksSnapshot.forEach((notebookDoc) => {
+                            const notebookData = notebookDoc.data();
+                            console.log(`🔍 Notebook data for ${notebookDoc.id}:`, {
+                                id: notebookDoc.id,
+                                reviewStatus: notebookData.reviewStatus,
+                                title: notebookData.title,
+                                category: notebookData.category,
+                                isPublic: notebookData.isPublic
+                            });
+                            
                             allNotebooks.push({
                                 id: notebookDoc.id,
                                 userId: userId,
                                 userEmail: userId,
-                                ...notebookDoc.data()
+                                ...notebookData
                             });
                         });
                     } catch (err) {
-                        console.warn(`Error fetching notebooks for user ${userId}:`, err);
+                        console.warn(`❌ Error fetching notebooks for user ${userId}:`, err);
                     }
                 }
+                
+                console.log("🔍 Total notebooks collected:", allNotebooks.length);
+                console.log("🔍 All notebook statuses:", allNotebooks.map(nb => ({ id: nb.id, status: nb.reviewStatus })));
                 
                 reviewQueue = allNotebooks;
                 renderReviewQueue();
