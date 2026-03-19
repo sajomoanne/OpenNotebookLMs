@@ -598,6 +598,18 @@ class Router {
         if (window.updateAuthUI) {
             window.updateAuthUI();
         }
+        if (window.loadUserData) {
+            window.loadUserData();
+        }
+        
+        // Add bio character counter
+        const bioInput = document.getElementById("bioInput");
+        if (bioInput) {
+            bioInput.addEventListener("input", (e) => {
+                const count = e.target.value.length;
+                document.getElementById("bioCount").textContent = count;
+            });
+        }
     }
 
     initializeSearchPage() {
