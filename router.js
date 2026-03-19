@@ -651,11 +651,17 @@ class Router {
     initializeAdminReviewDetailPage() {
         // Admin review detail page initialization
         // Wait for notebook data to be loaded, then populate form
-        if (window.currentReviewNotebook && window.populateReviewForm) {
-            setTimeout(() => {
+        const checkAndPopulate = () => {
+            if (window.currentReviewNotebook && window.populateReviewForm) {
                 window.populateReviewForm();
-            }, 200);
-        }
+            } else {
+                // Retry after delay if data not ready
+                setTimeout(checkAndPopulate, 100);
+            }
+        };
+        
+        // Initial attempt
+        setTimeout(checkAndPopulate, 100);
     }
 
     initialize404Page() {
