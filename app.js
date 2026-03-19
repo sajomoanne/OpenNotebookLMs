@@ -224,12 +224,6 @@ async function initAuth() {
 
 function hasAccount() {
     const result = !!user && !!auth;
-    console.log("🔍 hasAccount() check:", {
-        user: !!user,
-        auth: !!auth,
-        userObject: user,
-        result: result
-    });
     return result;
 }
 
@@ -1464,30 +1458,111 @@ window.openReviewDetail = async (notebookId, userId) => {
     }
 };
 
-window.updateCharCounters = () => {
-    const titleInput = document.getElementById('review_title');
-    const descInput = document.getElementById('review_description');
-    const messageInput = document.getElementById('review_message');
+// Function to populate review form with notebook data
+window.populateReviewForm = () => {
+    if (!currentReviewNotebook) {
+        console.log("No notebook data to populate");
+        return;
+    }
     
-    const updateCounter = (input, counterId, max) => {
-        const counter = document.getElementById(counterId);
-        if (input && counter) {
-            counter.textContent = input.value.length;
-            counter.className = input.value.length > max * 0.9 ? 'text-xs text-orange-500' : 'text-xs text-gray-500';
+    // Print the complete notebook data in console
+    console.log("📋 Notebook Data from Firebase:", currentReviewNotebook);
+    
+    // Populate form fields
+    const urlInput = safeGetElement('review_url');
+    const titleInput = safeGetElement('review_title');
+    const descInput = safeGetElement('review_description');
+    const categoryInput = safeGetElement('review_category');
+    const sourcesInput = safeGetElement('review_sources');
+    const messageInput = safeGetElement('review_message');
+    const createdAtInput = safeGetElement('review_createdAt');
+    const ownerIdInput = safeGetElement('review_ownerId');
+    const statusSelect = safeGetElement('review_status');
+    const isPublicTrue = safeGetElement('isPublic_true');
+    const isPublicFalse = safeGetElement('isPublic_false');
+    
+    if (urlInput) urlInput.value = currentReviewNotebook.url || '';
+    if (titleInput) titleInput.value = currentReviewNotebook.title || '';
+    if (descInput) descInput.value = currentReviewNotebook.description || '';
+    if (categoryInput) categoryInput.value = currentReviewNotebook.category || '';
+    if (sourcesInput) sourcesInput.value = currentReviewNotebook.sources || '';
+    if (messageInput) messageInput.value = currentReviewNotebook.reviewMessage || '';
+    
+    // Populate display-only fields
+    if (createdAtInput) {
+        const date = currentReviewNotebook.createdAt?.toDate();
+        if (date) {
+            createdAtInput.value = date.toLocaleString();
         }
-    };
+    }
     
-    if (titleInput) titleInput.addEventListener('input', () => updateCounter(titleInput, 'titleCount', 50));
-    if (descInput) descInput.addEventListener('input', () => updateCounter(descInput, 'descCount', 300));
-    if (messageInput) messageInput.addEventListener('input', () => updateCounter(messageInput, 'messageCount', 300));
+    if (ownerIdInput) ownerIdInput.value = currentReviewNotebook.ownerId || '';
     
-    // Initial update
-    updateCounter(titleInput, 'titleCount', 50);
-    updateCounter(descInput, 'descCount', 300);
-    updateCounter(messageInput, 'messageCount', 300);
+    if (statusSelect) {
+        statusSelect.value = currentReviewNotebook.reviewStatus || 'pending';
+    }
+    
+    // Set public visibility radio buttons
+    if (isPublicTrue && isPublicFalse) {
+        if (currentReviewNotebook.isPublic === true) {
+            isPublicTrue.checked = true;
+        } else {
+            isPublicFalse.checked = true;
+        }
+    }
+    
+    // Update button states based on current review status
+    updateButtonStates(currentReviewNotebook.reviewStatus);
+    
+    // Update character counters
+    updateCharCounters();
+    
+    console.log("✅ Review form populated with notebook data");
 };
 
-window.submitReview = async (decision) => {
+// Function to update button states based on review status
+window.updateButtonStates = (status) => {
+    const saveBtn = safeGetElement('saveBtn');
+    const approveBtn = safeGetElement('approveBtn');
+    const declineBtn = safeGetElement('declineBtn');
+    
+    if (!saveBtn || !approveBtn || !declineBtn) return;
+    
+    // Reset all buttons to enabled state first
+    saveBtn.disabled = false;
+    approveBtn.disabled = false;
+    declineBtn.disabled = false;
+    
+    // Disable buttons based on current status
+    switch (status) {
+        case 'pending':
+            saveBtn.disabled = true;
+            break;
+        case 'approved':
+            approveBtn.disabled = true;
+            break;
+        case 'declined':
+            declineBtn.disabled = true;
+            break;
+        case 'private':
+            // For private notebooks, only save is enabled
+            approveBtn.disabled = true;
+            declineBtn.disabled = true;
+            break;
+    }
+    
+    // Update button styles to reflect disabled state
+    [saveBtn, approveBtn, declineBtn].forEach(btn => {
+        if (btn.disabled) {
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+};
+
+// Function to save notebook changes without changing review status
+window.saveNotebookChanges = async () => {
     if (!db || !isAdmin() || !currentReviewNotebook) return;
     
     const title = document.getElementById('review_title').value.trim();
@@ -1501,6 +1576,58 @@ window.submitReview = async (decision) => {
         return;
     }
     
+    // Show loading state
+    const saveBtn = safeGetElement('saveBtn');
+    if (saveBtn) saveBtn.disabled = true;
+    
+    try {
+        const notebookRef = doc(db, "notebooks", currentReviewNotebook.id);
+        
+        const updateData = {
+            title,
+            description,
+            category,
+            sources,
+            reviewMessage: message || currentReviewNotebook.reviewMessage,
+            // Keep current review status
+            reviewStatus: currentReviewNotebook.reviewStatus,
+            isPublic: currentReviewNotebook.isPublic,
+            reviewedAt: currentReviewNotebook.reviewedAt,
+            reviewedBy: currentReviewNotebook.reviewedBy
+        };
+        
+        await updateDoc(notebookRef, updateData);
+        
+        // Update currentReviewNotebook with new data
+        currentReviewNotebook = { ...currentReviewNotebook, ...updateData };
+        
+        showToast("Changes saved successfully! 💾", "success");
+        
+    } catch (err) {
+        console.error("Error saving notebook changes:", err);
+        showToast("Failed to save changes", "error");
+    } finally {
+        // Re-enable save button
+        if (saveBtn) saveBtn.disabled = false;
+    }
+};
+
+window.submitReview = async (decision) => {
+    if (!db || !isAdmin() || !currentReviewNotebook) return;
+    
+    const title = document.getElementById('review_title').value.trim();
+    const description = document.getElementById('review_description').value.trim();
+    const category = document.getElementById('review_category').value.trim();
+    const sources = parseInt(document.getElementById('review_sources').value) || 0;
+    const message = document.getElementById('review_message').value.trim();
+    const status = document.getElementById('review_status').value;
+    const isPublic = document.querySelector('input[name="isPublic"]:checked')?.value === 'true';
+    
+    if (!title || !description || !category) {
+        showToast("Please fill in all required fields", "warning");
+        return;
+    }
+    
     const confirmMessage = decision === 'approved' 
         ? `Approve "${title}" and make it public?`
         : `Decline "${title}" and send feedback to user?`;
@@ -1508,13 +1635,12 @@ window.submitReview = async (decision) => {
     if (!confirm(confirmMessage)) return;
     
     // Show loading state
-    const approveBtn = document.querySelector('button[onclick*="approved"]');
-    const declineBtn = document.querySelector('button[onclick*="declined"]');
+    const approveBtn = safeGetElement('approveBtn');
+    const declineBtn = safeGetElement('declineBtn');
     if (approveBtn) approveBtn.disabled = true;
     if (declineBtn) declineBtn.disabled = true;
     
     try {
-        // Update notebook in new structure
         const notebookRef = doc(db, "notebooks", currentReviewNotebook.id);
         
         const updateData = {
@@ -1523,8 +1649,8 @@ window.submitReview = async (decision) => {
             category,
             sources,
             reviewMessage: message || (decision === 'approved' ? 'Approved for public display' : 'Not approved at this time'),
-            reviewStatus: decision,
-            isPublic: decision === 'approved',
+            reviewStatus: status, // Use dropdown value instead of decision
+            isPublic: decision === 'approved' ? isPublic : false,
             reviewedAt: Timestamp.now(),
             reviewedBy: user.email
         };
@@ -1532,7 +1658,7 @@ window.submitReview = async (decision) => {
         await updateDoc(notebookRef, updateData);
         
         // If approved, also add to public notebooks
-        if (decision === 'approved') {
+        if (decision === 'approved' && isPublic) {
             const publicRef = doc(db, "publicNotebooks", currentReviewNotebook.id);
             await setDoc(publicRef, {
                 ...currentReviewNotebook,
@@ -1552,6 +1678,7 @@ window.submitReview = async (decision) => {
     } catch (err) {
         console.error("Error submitting review:", err);
         showToast("Failed to submit review", "error");
+    } finally {
         // Re-enable buttons
         if (approveBtn) approveBtn.disabled = false;
         if (declineBtn) declineBtn.disabled = false;
@@ -1740,32 +1867,23 @@ if (!attachSubmitFormListener()) {
 }
 
 async function handleSubmit(e) {
-    console.log("🔵 Form submission started");
     e.preventDefault();
-    console.log("🔵 preventDefault called - page should not reload");
 
     if (!db) {
-        console.error("❌ Database not configured - db is:", db);
         showToast("Database not configured. Please refresh the page.", "error");
         return;
     }
-    console.log("✅ Database check passed");
 
     if (!hasAccount()) {
-        console.error("❌ User not logged in - hasAccount():", hasAccount());
-        console.error("❌ User object:", user);
         showToast("Sign in to submit notebooks", "error");
         window.toggleModal("authModal");
         return;
     }
-    console.log("✅ User authentication check passed");
 
     if (!user.emailVerified) {
-        console.error("❌ Email not verified - user.emailVerified:", user.emailVerified);
         showToast("Verify your email before submitting", "error");
         return;
     }
-    console.log("✅ Email verification check passed");
 
     const titleEl = document.getElementById("fb_title");
     const descriptionEl = document.getElementById("fb_description");
@@ -1774,80 +1892,53 @@ async function handleSubmit(e) {
     const customTopicEl = document.getElementById("fb_custom_category");
     const visibilityEl = document.getElementById("fb_visibility");
 
-    console.log("🔍 Form elements found:", {
-        title: !!titleEl,
-        description: !!descriptionEl,
-        url: !!urlEl,
-        topicSelector: !!topicSelector,
-        customTopicEl: !!customTopicEl,
-        visibilityEl: !!visibilityEl
-    });
-
     const title = (titleEl?.value || "").trim();
     const description = (descriptionEl?.value || "").trim();
     const url = (urlEl?.value || "").trim();
     const visibility = document.getElementById("fb_visibility")?.checked ? "public" : "private";
 
-    console.log("🔍 Form data collected:", { title, description, url, visibility });
-
     let category = topicSelector?.value || "General";
     if (category === "CUSTOM") {
         category = (customTopicEl?.value || "").trim();
-        console.log("🔍 Custom topic selected:", category);
     }
-    console.log("🔍 Final category:", category);
 
     if (!title || !description || !url || !category) {
-        console.error("❌ Missing required fields:", { title: !!title, description: !!description, url: !!url, category: !!category });
         showToast("Please fill all required fields", "error");
         return;
     }
-    console.log("✅ Required fields check passed");
 
     if (title.length > TITLE_MAX) {
-        console.error("❌ Title too long:", title.length, "max:", TITLE_MAX);
         showToast(`Title must be ${TITLE_MAX} characters or less`, "error");
         return;
     }
-    console.log("✅ Title length check passed");
 
     if (description.length > DESCRIPTION_MAX) {
-        console.error("❌ Description too long:", description.length, "max:", DESCRIPTION_MAX);
         showToast(`Summary must be ${DESCRIPTION_MAX} characters or less`, "error");
         return;
     }
-    console.log("✅ Description length check passed");
 
     // Add custom topic length validation
     if (category === "CUSTOM" && customTopicEl) {
         const customTopicLength = (customTopicEl?.value || "").trim().length;
         if (customTopicLength > 30) {
-            console.error("❌ Custom topic too long:", customTopicLength, "max: 30");
             showToast("Custom topic must be 30 characters or less", "error");
             return;
         }
-        console.log("✅ Custom topic length check passed");
     }
 
     if (!validateNotebookUrl(url)) {
-        console.error("❌ Invalid URL format:", url);
         showToast("Notebook URL must start with https://notebooklm.google.com/notebook/", "error");
         return;
     }
-    console.log("✅ URL format validation passed");
 
     const safeUrl = sanitizeNotebookUrl(url);
     if (!safeUrl) {
-        console.error("❌ URL sanitization failed for:", url);
         showToast("Invalid notebook URL", "error");
         return;
     }
-    console.log("✅ URL sanitization passed, safeUrl:", safeUrl);
 
     try {
-        console.log("🔥 Starting database operations...");
         const notebookRef = collection(db, "notebooks");
-        console.log("🔥 Notebook collection reference created");
         
         const payload = {
             ownerId: user.uid,
@@ -1864,18 +1955,13 @@ async function handleSubmit(e) {
                     : "Submitted for reviewer evaluation",
             createdAt: Timestamp.now()
         };
-        console.log("🔥 Payload prepared:", payload);
 
-        console.log("🔥 Adding document to Firestore...");
         const docRef = await addDoc(notebookRef, payload);
-        console.log("✅ Document added successfully with ID:", docRef.id);
 
         // Add notebook ID to user's notebookIds list
-        console.log("🔥 Adding notebook ID to user document...");
         await updateDoc(doc(db, "users", user.uid), {
             notebookIds: arrayUnion(docRef.id)
         });
-        console.log("✅ Notebook ID added to user document");
 
         if (visibility === "private") {
             showToast("Saved as private notebook", "success");
@@ -1883,9 +1969,7 @@ async function handleSubmit(e) {
             showToast("Submitted for evaluation", "success");
         }
     } catch (err) {
-        console.error("❌ Database operation failed:", err);
-        console.error("❌ Error code:", err.code);
-        console.error("❌ Error message:", err.message);
+        console.error("Database operation failed:", err);
         showToast("Submission failed: " + err.message, "error");
     }
 }
