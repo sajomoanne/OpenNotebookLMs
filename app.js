@@ -687,10 +687,15 @@ async function makeNotebookPrivate(notebook) {
     if (!db || !hasAccount() || !notebook?.id) return;
 
     try {
-        await update(ref(db, `users/${user.uid}/notebooks/${notebook.id}`), {
-            isPublic: false
+        // Update notebook in new structure
+        await updateDoc(doc(db, "notebooks", notebook.id), {
+            isPublic: false,
+            reviewStatus: "private",
+            reviewMessage: "Saved as private notebook"
         });
-        await remove(ref(db, `publicNotebooks/${notebook.id}`)).catch(() => {
+
+        // Remove from public notebooks if exists
+        await deleteDoc(doc(db, "publicNotebooks", notebook.id)).catch(() => {
             // ignore if missing or restricted
         });
 
@@ -701,7 +706,7 @@ async function makeNotebookPrivate(notebook) {
     }
 }
 
-async function submitRating(notebookId) {
+window.submitRating = async (notebookId, rating) => {
     if (!notebookId || !db) return;
     if (!user) {
         showToast("Log in to rate notebooks", "info");
@@ -712,26 +717,20 @@ async function submitRating(notebookId) {
     const input = prompt("Rate this notebook from 1 to 5");
     if (input === null) return;
 
-    const rating = Number.parseInt(input, 10);
-    if (Number.isNaN(rating) || rating < 1 || rating > 5) {
+    const ratingValue = Number.parseInt(input, 10);
+    if (Number.isNaN(ratingValue) || ratingValue < 1 || ratingValue > 5) {
         showToast("Rating must be a number from 1 to 5", "error");
         return;
     }
 
-    const notebook = publicNotebooks.find((nb) => nb.id === notebookId);
-    if (!notebook || notebook.isPublic !== true || (notebook.reviewStatus || "approved") !== "approved") {
-        showToast("Notebook is no longer available for rating", "error");
-        return;
-    }
-
     try {
-        await set(ref(db, `publicNotebooks/${notebookId}/ratings/${user.uid}`), rating);
+        await setDoc(doc(db, "publicNotebooks", notebookId, "ratings", user.uid), ratingValue);
         showToast("Rating submitted", "success");
     } catch (err) {
         console.error(err);
         showToast("Failed to submit rating", "error");
     }
-}
+};
 
 async function submitReport(notebookId) {
     if (!notebookId || !db) return;
@@ -743,9 +742,15 @@ async function submitReport(notebookId) {
 
     const reason = prompt("Report reason (required)");
     if (reason === null) return;
+    
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
-        showToast("Report reason cannot be empty", "error");
+        showToast("Report reason is required", "error");
+        return;
+    }
+    
+    if (trimmedReason.length > 500) {
+        showToast("Report reason must be 500 characters or less", "error");
         return;
     }
 
@@ -756,16 +761,16 @@ async function submitReport(notebookId) {
     }
 
     try {
-        await set(ref(db, `publicNotebooks/${notebookId}/reports/${user.uid}`), {
+        await setDoc(doc(db, "publicNotebooks", notebookId, "reports", user.uid), {
             reason: trimmedReason,
-            createdAt: Date.now()
+            createdAt: Timestamp.now()
         });
         showToast("Report submitted", "success");
     } catch (err) {
         console.error(err);
         showToast("Failed to submit report", "error");
     }
-}
+};
 
 function redirectTo(path) {
     if (window.router) {
@@ -1179,13 +1184,11 @@ async function ensureUserDocument(user) {
             lastLoginAt: Timestamp.now(),
             notebookIds: []
         });
-        console.log("✅ User document created in Firestore");
     } else {
         // Update last login
         await updateDoc(userDocRef, {
             lastLoginAt: Timestamp.now()
         });
-        console.log("✅ User login time updated");
     }
 }
 
@@ -1266,13 +1269,7 @@ window.renderReviewQueue = () => {
     const emptyState = document.getElementById("emptyReviewState");
     if (!list || !emptyState) return;
 
-    console.log("🔍 Rendering review queue:");
-    console.log("🔍 Total notebooks in queue:", reviewQueue.length);
-    console.log("🔍 Current filter:", currentReviewFilter);
-
     const filtered = reviewQueue.filter(nb => (nb.reviewStatus || "pending") === currentReviewFilter);
-    
-    console.log("🔍 Notebooks after filtering:", filtered.length);
     
     if (!filtered.length) {
         list.classList.add("hidden");
@@ -1351,32 +1348,45 @@ window.openReviewDetail = async (notebookId, userId) => {
     if (!db || !isAdmin()) return;
     
     try {
-        const notebookRef = doc(db, "users", userId, "notebooks", notebookId);
+        // Query notebooks collection directly (new structure)
+        const notebookRef = doc(db, "notebooks", notebookId);
         const notebookSnap = await getDoc(notebookRef);
         
         if (notebookSnap.exists()) {
             currentReviewNotebook = {
                 id: notebookId,
-                userId: userId,
+                userId: userId, // Keep userId for reference
                 ...notebookSnap.data()
             };
             
-            // Show loading state
-            document.getElementById('reviewLoadingState').classList.add('hidden');
-            document.getElementById('reviewForm').classList.remove('hidden');
+            // Show loading state with null checks
+            const loadingState = document.getElementById('reviewLoadingState');
+            const reviewForm = document.getElementById('reviewForm');
             
-            // Populate form
-            document.getElementById('review_url').value = currentReviewNotebook.url || '';
-            document.getElementById('review_title').value = currentReviewNotebook.title || '';
-            document.getElementById('review_description').value = currentReviewNotebook.description || '';
-            document.getElementById('review_category').value = currentReviewNotebook.category || '';
-            document.getElementById('review_sources').value = currentReviewNotebook.sources || '';
-            document.getElementById('review_message').value = currentReviewNotebook.reviewMessage || '';
+            if (loadingState) loadingState.classList.add('hidden');
+            if (reviewForm) reviewForm.classList.remove('hidden');
+            
+            // Populate form with null checks
+            const urlInput = document.getElementById('review_url');
+            const titleInput = document.getElementById('review_title');
+            const descInput = document.getElementById('review_description');
+            const categoryInput = document.getElementById('review_category');
+            const sourcesInput = document.getElementById('review_sources');
+            const messageInput = document.getElementById('review_message');
+            
+            if (urlInput) urlInput.value = currentReviewNotebook.url || '';
+            if (titleInput) titleInput.value = currentReviewNotebook.title || '';
+            if (descInput) descInput.value = currentReviewNotebook.description || '';
+            if (categoryInput) categoryInput.value = currentReviewNotebook.category || '';
+            if (sourcesInput) sourcesInput.value = currentReviewNotebook.sources || '';
+            if (messageInput) messageInput.value = currentReviewNotebook.reviewMessage || '';
             
             // Update character counters
             updateCharCounters();
             
             window.router.redirect('/admin-review-detail');
+        } else {
+            showToast("Notebook not found", "error");
         }
     } catch (err) {
         console.error("Error loading notebook for review:", err);
@@ -1434,7 +1444,8 @@ window.submitReview = async (decision) => {
     if (declineBtn) declineBtn.disabled = true;
     
     try {
-        const notebookRef = doc(db, "users", currentReviewNotebook.userId, "notebooks", currentReviewNotebook.id);
+        // Update notebook in new structure
+        const notebookRef = doc(db, "notebooks", currentReviewNotebook.id);
         
         const updateData = {
             title,
@@ -1804,10 +1815,12 @@ if (!attachSubmitFormListener()) {
     });
 }
 
-// Expose Firebase variables globally for debugging
-window.db = db;
-window.auth = auth;
-window.user = user;
+// Expose Firebase variables for debugging (remove in production)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    window.db = db;
+    window.auth = auth;
+    window.user = user;
+}
 
 // Add function to manually check auth state
 window.checkAuthState = () => {
