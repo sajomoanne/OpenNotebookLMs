@@ -1460,6 +1460,8 @@ window.openReviewDetail = async (notebookId, userId) => {
 
 // Function to populate review form with notebook data
 window.populateReviewForm = () => {
+    console.log("🔍 populateReviewForm called. currentReviewNotebook:", !!currentReviewNotebook);
+    
     if (!currentReviewNotebook) {
         console.log("No notebook data to populate");
         return;
@@ -1480,6 +1482,20 @@ window.populateReviewForm = () => {
     const statusSelect = safeGetElement('review_status');
     const isPublicTrue = safeGetElement('isPublic_true');
     const isPublicFalse = safeGetElement('isPublic_false');
+    
+    console.log("🔍 Form elements found:", {
+        urlInput: !!urlInput,
+        titleInput: !!titleInput,
+        descInput: !!descInput,
+        categoryInput: !!categoryInput,
+        sourcesInput: !!sourcesInput,
+        messageInput: !!messageInput,
+        createdAtInput: !!createdAtInput,
+        ownerIdInput: !!ownerIdInput,
+        statusSelect: !!statusSelect,
+        isPublicTrue: !!isPublicTrue,
+        isPublicFalse: !!isPublicFalse
+    });
     
     if (urlInput) urlInput.value = currentReviewNotebook.url || '';
     if (titleInput) titleInput.value = currentReviewNotebook.title || '';
@@ -1596,6 +1612,7 @@ window.saveNotebookChanges = async () => {
             reviewedBy: currentReviewNotebook.reviewedBy
         };
         
+        console.log("💾 Saving notebook changes:", updateData);
         await updateDoc(notebookRef, updateData);
         
         // Update currentReviewNotebook with new data
@@ -1655,6 +1672,7 @@ window.submitReview = async (decision) => {
             reviewedBy: user.email
         };
         
+        console.log(`🎯 Submitting review (${decision}):`, updateData);
         await updateDoc(notebookRef, updateData);
         
         // If approved, also add to public notebooks
@@ -1665,6 +1683,7 @@ window.submitReview = async (decision) => {
                 ...updateData,
                 ownerId: currentReviewNotebook.userId
             });
+            console.log("✅ Added to public notebooks");
         }
         
         showToast(`Notebook ${decision} successfully! 🎉`, "success");
