@@ -41,6 +41,78 @@ import {
     documentId
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+// Global error handling
+window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
+    if (window.location.hostname !== 'localhost') {
+        showToast('An unexpected error occurred', 'error');
+    }
+});
+
+// Unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+    if (window.location.hostname !== 'localhost') {
+        showToast('An unexpected error occurred', 'error');
+    }
+});
+
+// Event listener registry for cleanup
+const eventListeners = new Map();
+
+function addEventListenerWithCleanup(element, event, handler, key) {
+    if (element && !eventListeners.has(key)) {
+        element.addEventListener(event, handler);
+        eventListeners.set(key, { element, event, handler });
+    }
+}
+
+function cleanupEventListeners() {
+    eventListeners.forEach(({ element, event, handler }) => {
+        element.removeEventListener(event, handler);
+    });
+    eventListeners.clear();
+}
+
+// Call cleanup on page unload
+window.addEventListener('beforeunload', cleanupEventListeners);
+
+// Helper function for safe DOM queries
+function safeGetElement(id, required = true) {
+    const element = document.getElementById(id);
+    if (required && !element) {
+        console.warn(`Required element not found: ${id}`);
+        return null;
+    }
+    return element;
+}
+
+// Helper function for validating fields
+function validateField(fieldName, value, rules) {
+    const errors = [];
+    
+    if (rules.required && (!value || value.trim() === '')) {
+        errors.push(`${fieldName} is required`);
+    }
+    
+    if (rules.maxLength && value.length > rules.maxLength) {
+        errors.push(`${fieldName} must be ${rules.maxLength} characters or less`);
+    }
+    
+    if (rules.minLength && value.length < rules.minLength) {
+        errors.push(`${fieldName} must be at least ${rules.minLength} characters`);
+    }
+    
+    if (rules.pattern && !rules.pattern.test(value)) {
+        errors.push(`${fieldName} format is invalid`);
+    }
+    
+    return {
+        valid: errors.length === 0,
+        errors: errors
+    };
+}
+
 // Global State
 let publicNotebooks = [];
 let myNotebooks = [];
@@ -51,6 +123,14 @@ let currentReviewNotebook = null;
 let user = null;
 let auth = null;
 let db = null;
+
+// Initialization guards to prevent race conditions
+let isInitialized = {
+    submitForm: false,
+    authModal: false,
+    navigation: false,
+    reviewSync: false
+};
 let unsubscribePublic = null;
 let unsubscribeMine = null;
 let unsubscribeReview = null;
@@ -1345,7 +1425,13 @@ window.filterReviewQueue = (filter) => {
 };
 
 window.openReviewDetail = async (notebookId, userId) => {
-    if (!db || !isAdmin()) return;
+    console.log("Opening review detail for:", notebookId, userId);
+    
+    if (!db || !isAdmin()) {
+        console.error("Database not available or not admin");
+        showToast("Access denied", "error");
+        return;
+    }
     
     try {
         // Query notebooks collection directly (new structure)
@@ -1359,33 +1445,17 @@ window.openReviewDetail = async (notebookId, userId) => {
                 ...notebookSnap.data()
             };
             
-            // Show loading state with null checks
-            const loadingState = document.getElementById('reviewLoadingState');
-            const reviewForm = document.getElementById('reviewForm');
+            console.log("Notebook loaded successfully, navigating to detail page");
             
-            if (loadingState) loadingState.classList.add('hidden');
-            if (reviewForm) reviewForm.classList.remove('hidden');
-            
-            // Populate form with null checks
-            const urlInput = document.getElementById('review_url');
-            const titleInput = document.getElementById('review_title');
-            const descInput = document.getElementById('review_description');
-            const categoryInput = document.getElementById('review_category');
-            const sourcesInput = document.getElementById('review_sources');
-            const messageInput = document.getElementById('review_message');
-            
-            if (urlInput) urlInput.value = currentReviewNotebook.url || '';
-            if (titleInput) titleInput.value = currentReviewNotebook.title || '';
-            if (descInput) descInput.value = currentReviewNotebook.description || '';
-            if (categoryInput) categoryInput.value = currentReviewNotebook.category || '';
-            if (sourcesInput) sourcesInput.value = currentReviewNotebook.sources || '';
-            if (messageInput) messageInput.value = currentReviewNotebook.reviewMessage || '';
-            
-            // Update character counters
-            updateCharCounters();
-            
-            window.router.redirect('/admin-review-detail');
+            // Navigate to detail page
+            if (window.router) {
+                window.router.redirect('/admin-review-detail');
+            } else {
+                console.error("Router not available");
+                showToast("Navigation error", "error");
+            }
         } else {
+            console.error("Notebook not found:", notebookId);
             showToast("Notebook not found", "error");
         }
     } catch (err) {
@@ -1643,165 +1713,19 @@ function updateSubmissionButtonLabel() {
 
 // Function to attach submit form event listener safely
 function attachSubmitFormListener() {
+    // Prevent multiple attachments
+    if (isInitialized.submitForm) {
+        return true;
+    }
+    
     const form = document.getElementById("submissionForm");
     if (form) {
+        isInitialized.submitForm = true;
         console.log("✅ Form found, attaching event listener");
-        form.addEventListener("submit", async (e) => {
-            console.log("🔵 Form submission started");
-            e.preventDefault();
-            console.log("🔵 preventDefault called - page should not reload");
-
-            if (!db) {
-                console.error("❌ Database not configured - db is:", db);
-                showToast("Database not configured. Please refresh the page.", "error");
-                return;
-            }
-            console.log("✅ Database check passed");
-
-            if (!hasAccount()) {
-                console.error("❌ User not logged in - hasAccount():", hasAccount());
-                console.error("❌ User object:", user);
-                showToast("Sign in to submit notebooks", "error");
-                window.toggleModal("authModal");
-                return;
-            }
-            console.log("✅ User authentication check passed");
-
-            if (!user.emailVerified) {
-                console.error("❌ Email not verified - user.emailVerified:", user.emailVerified);
-                showToast("Verify your email before submitting", "error");
-                return;
-            }
-            console.log("✅ Email verification check passed");
-
-            const titleEl = document.getElementById("fb_title");
-            const descriptionEl = document.getElementById("fb_description");
-            const urlEl = document.getElementById("fb_url");
-            const topicSelector = document.getElementById("topicSelector");
-            const customTopicEl = document.getElementById("fb_custom_category");
-            const visibilityEl = document.getElementById("fb_visibility");
-
-            console.log("🔍 Form elements found:", {
-                title: !!titleEl,
-                description: !!descriptionEl,
-                url: !!urlEl,
-                topicSelector: !!topicSelector,
-                customTopicEl: !!customTopicEl,
-                visibilityEl: !!visibilityEl
-            });
-
-            const title = (titleEl?.value || "").trim();
-            const description = (descriptionEl?.value || "").trim();
-            const url = (urlEl?.value || "").trim();
-            const visibility = document.getElementById("fb_visibility")?.checked ? "public" : "private";
-
-            console.log("🔍 Form data collected:", { title, description, url, visibility });
-
-            let category = topicSelector?.value || "General";
-            if (category === "CUSTOM") {
-                category = (customTopicEl?.value || "").trim();
-                console.log("🔍 Custom topic selected:", category);
-            }
-            console.log("🔍 Final category:", category);
-
-            if (!title || !description || !url || !category) {
-                console.error("❌ Missing required fields:", { title: !!title, description: !!description, url: !!url, category: !!category });
-                showToast("Please fill all required fields", "error");
-                return;
-            }
-            console.log("✅ Required fields check passed");
-
-            if (title.length > TITLE_MAX) {
-                console.error("❌ Title too long:", title.length, "max:", TITLE_MAX);
-                showToast(`Title must be ${TITLE_MAX} characters or less`, "error");
-                return;
-            }
-            console.log("✅ Title length check passed");
-
-            if (description.length > DESCRIPTION_MAX) {
-                console.error("❌ Description too long:", description.length, "max:", DESCRIPTION_MAX);
-                showToast(`Summary must be ${DESCRIPTION_MAX} characters or less`, "error");
-                return;
-            }
-            console.log("✅ Description length check passed");
-
-            // Add custom topic length validation
-            if (category === "CUSTOM" && customTopicEl) {
-                const customTopicLength = (customTopicEl?.value || "").trim().length;
-                if (customTopicLength > 30) {
-                    console.error("❌ Custom topic too long:", customTopicLength, "max: 30");
-                    showToast("Custom topic must be 30 characters or less", "error");
-                    return;
-                }
-                console.log("✅ Custom topic length check passed");
-            }
-
-            if (!validateNotebookUrl(url)) {
-                console.error("❌ Invalid URL format:", url);
-                showToast("Notebook URL must start with https://notebooklm.google.com/notebook/", "error");
-                return;
-            }
-            console.log("✅ URL format validation passed");
-
-            const safeUrl = sanitizeNotebookUrl(url);
-            if (!safeUrl) {
-                console.error("❌ URL sanitization failed for:", url);
-                showToast("Invalid notebook URL", "error");
-                return;
-            }
-            console.log("✅ URL sanitization passed, safeUrl:", safeUrl);
-
-            try {
-                console.log("🔥 Starting database operations...");
-                const notebookRef = collection(db, "notebooks");
-                console.log("🔥 Notebook collection reference created");
-                
-                const payload = {
-                    ownerId: user.uid,
-                    title,
-                    description,
-                    url: safeUrl,
-                    category,
-                    sources: null,
-                    isPublic: false,
-                    reviewStatus: visibility === "private" ? "private" : "pending",
-                    reviewMessage:
-                        visibility === "private"
-                            ? "Saved as private notebook"
-                            : "Submitted for reviewer evaluation",
-                    createdAt: Timestamp.now()
-                };
-                console.log("🔥 Payload prepared:", payload);
-
-                console.log("🔥 Adding document to Firestore...");
-                const docRef = await addDoc(notebookRef, payload);
-                console.log("✅ Document added successfully with ID:", docRef.id);
-
-                // Add notebook ID to user's notebookIds list
-                console.log("🔥 Adding notebook ID to user document...");
-                await updateDoc(doc(db, "users", user.uid), {
-                    notebookIds: arrayUnion(docRef.id)
-                });
-                console.log("✅ Notebook ID added to user document");
-
-                if (visibility === "private") {
-                    showToast("Saved as private notebook", "success");
-                } else {
-                    showToast("Submitted for evaluation", "success");
-                }
-            } catch (err) {
-                console.error("❌ Database operation failed:", err);
-                console.error("❌ Error code:", err.code);
-                console.error("❌ Error message:", err.message);
-                showToast("Submission failed: " + err.message, "error");
-            }
-        });
-        console.log("✅ Event listener attached successfully");
+        form.addEventListener("submit", handleSubmit);
         return true;
-    } else {
-        console.log("❌ Form not found, will retry...");
-        return false;
     }
+    return false;
 }
 
 // Try to attach listener immediately, and retry if DOM not ready
@@ -1813,6 +1737,157 @@ if (!attachSubmitFormListener()) {
             }
         }, 100);
     });
+}
+
+async function handleSubmit(e) {
+    console.log("🔵 Form submission started");
+    e.preventDefault();
+    console.log("🔵 preventDefault called - page should not reload");
+
+    if (!db) {
+        console.error("❌ Database not configured - db is:", db);
+        showToast("Database not configured. Please refresh the page.", "error");
+        return;
+    }
+    console.log("✅ Database check passed");
+
+    if (!hasAccount()) {
+        console.error("❌ User not logged in - hasAccount():", hasAccount());
+        console.error("❌ User object:", user);
+        showToast("Sign in to submit notebooks", "error");
+        window.toggleModal("authModal");
+        return;
+    }
+    console.log("✅ User authentication check passed");
+
+    if (!user.emailVerified) {
+        console.error("❌ Email not verified - user.emailVerified:", user.emailVerified);
+        showToast("Verify your email before submitting", "error");
+        return;
+    }
+    console.log("✅ Email verification check passed");
+
+    const titleEl = document.getElementById("fb_title");
+    const descriptionEl = document.getElementById("fb_description");
+    const urlEl = document.getElementById("fb_url");
+    const topicSelector = document.getElementById("topicSelector");
+    const customTopicEl = document.getElementById("fb_custom_category");
+    const visibilityEl = document.getElementById("fb_visibility");
+
+    console.log("🔍 Form elements found:", {
+        title: !!titleEl,
+        description: !!descriptionEl,
+        url: !!urlEl,
+        topicSelector: !!topicSelector,
+        customTopicEl: !!customTopicEl,
+        visibilityEl: !!visibilityEl
+    });
+
+    const title = (titleEl?.value || "").trim();
+    const description = (descriptionEl?.value || "").trim();
+    const url = (urlEl?.value || "").trim();
+    const visibility = document.getElementById("fb_visibility")?.checked ? "public" : "private";
+
+    console.log("🔍 Form data collected:", { title, description, url, visibility });
+
+    let category = topicSelector?.value || "General";
+    if (category === "CUSTOM") {
+        category = (customTopicEl?.value || "").trim();
+        console.log("🔍 Custom topic selected:", category);
+    }
+    console.log("🔍 Final category:", category);
+
+    if (!title || !description || !url || !category) {
+        console.error("❌ Missing required fields:", { title: !!title, description: !!description, url: !!url, category: !!category });
+        showToast("Please fill all required fields", "error");
+        return;
+    }
+    console.log("✅ Required fields check passed");
+
+    if (title.length > TITLE_MAX) {
+        console.error("❌ Title too long:", title.length, "max:", TITLE_MAX);
+        showToast(`Title must be ${TITLE_MAX} characters or less`, "error");
+        return;
+    }
+    console.log("✅ Title length check passed");
+
+    if (description.length > DESCRIPTION_MAX) {
+        console.error("❌ Description too long:", description.length, "max:", DESCRIPTION_MAX);
+        showToast(`Summary must be ${DESCRIPTION_MAX} characters or less`, "error");
+        return;
+    }
+    console.log("✅ Description length check passed");
+
+    // Add custom topic length validation
+    if (category === "CUSTOM" && customTopicEl) {
+        const customTopicLength = (customTopicEl?.value || "").trim().length;
+        if (customTopicLength > 30) {
+            console.error("❌ Custom topic too long:", customTopicLength, "max: 30");
+            showToast("Custom topic must be 30 characters or less", "error");
+            return;
+        }
+        console.log("✅ Custom topic length check passed");
+    }
+
+    if (!validateNotebookUrl(url)) {
+        console.error("❌ Invalid URL format:", url);
+        showToast("Notebook URL must start with https://notebooklm.google.com/notebook/", "error");
+        return;
+    }
+    console.log("✅ URL format validation passed");
+
+    const safeUrl = sanitizeNotebookUrl(url);
+    if (!safeUrl) {
+        console.error("❌ URL sanitization failed for:", url);
+        showToast("Invalid notebook URL", "error");
+        return;
+    }
+    console.log("✅ URL sanitization passed, safeUrl:", safeUrl);
+
+    try {
+        console.log("🔥 Starting database operations...");
+        const notebookRef = collection(db, "notebooks");
+        console.log("🔥 Notebook collection reference created");
+        
+        const payload = {
+            ownerId: user.uid,
+            title,
+            description,
+            url: safeUrl,
+            category,
+            sources: null,
+            isPublic: false,
+            reviewStatus: visibility === "private" ? "private" : "pending",
+            reviewMessage:
+                visibility === "private"
+                    ? "Saved as private notebook"
+                    : "Submitted for reviewer evaluation",
+            createdAt: Timestamp.now()
+        };
+        console.log("🔥 Payload prepared:", payload);
+
+        console.log("🔥 Adding document to Firestore...");
+        const docRef = await addDoc(notebookRef, payload);
+        console.log("✅ Document added successfully with ID:", docRef.id);
+
+        // Add notebook ID to user's notebookIds list
+        console.log("🔥 Adding notebook ID to user document...");
+        await updateDoc(doc(db, "users", user.uid), {
+            notebookIds: arrayUnion(docRef.id)
+        });
+        console.log("✅ Notebook ID added to user document");
+
+        if (visibility === "private") {
+            showToast("Saved as private notebook", "success");
+        } else {
+            showToast("Submitted for evaluation", "success");
+        }
+    } catch (err) {
+        console.error("❌ Database operation failed:", err);
+        console.error("❌ Error code:", err.code);
+        console.error("❌ Error message:", err.message);
+        showToast("Submission failed: " + err.message, "error");
+    }
 }
 
 // Expose Firebase variables for debugging (remove in production)
