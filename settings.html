@@ -114,6 +114,23 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="py-3 border-b border-gray-100 dark:border-gray-800">
+                            <div class="flex flex-col gap-3">
+                                <div>
+                                    <p class="font-semibold">Bio</p>
+                                    <p class="text-xs text-gray-500">Tell others about yourself (max 300 characters)</p>
+                                </div>
+                                <div class="relative">
+                                    <textarea id="bioInput" maxlength="300" rows="3" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Tell us about yourself..."></textarea>
+                                    <span class="absolute right-3 bottom-3 text-xs text-gray-500"><span id="bioCount">0</span>/300</span>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="button" onclick="saveBio()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">
+                                        Save Bio
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
