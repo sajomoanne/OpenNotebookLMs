@@ -650,7 +650,12 @@ class Router {
 
     initializeAdminReviewDetailPage() {
         // Admin review detail page initialization
-        // Form is populated when notebook is loaded
+        // Wait for notebook data to be loaded, then populate form
+        if (window.currentReviewNotebook && window.populateReviewForm) {
+            setTimeout(() => {
+                window.populateReviewForm();
+            }, 200);
+        }
     }
 
     initialize404Page() {
