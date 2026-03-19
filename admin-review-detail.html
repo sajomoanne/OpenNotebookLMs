@@ -76,11 +76,13 @@
             <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <label class="block text-sm font-semibold">NotebookLM URL</label>
-                    <button type="button" onclick="window.open(document.getElementById('review_url').value, '_blank')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-                        <i data-lucide="external-link" class="w-4 h-4 mr-1"></i> Open
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <input type="url" id="review_url" readonly class="flex-1 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+                        <button type="button" onclick="window.open(document.getElementById('review_url').value, '_blank')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                            <i data-lucide="external-link" class="w-4 h-4 mr-1"></i> Open
+                        </button>
+                    </div>
                 </div>
-                <input type="url" id="review_url" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
             </div>
 
             <!-- Editable Fields -->
@@ -166,13 +168,13 @@
 
             <!-- Submit Actions -->
             <div class="flex flex-col sm:flex-row gap-4">
-                <button type="button" id="saveBtn" onclick="saveNotebookChanges()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors">
+                <button type="button" id="saveBtn" onclick="saveNotebookChanges()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center">
                     <i data-lucide="save" class="w-5 h-5 mr-2"></i> Save Changes
                 </button>
-                <button type="button" id="approveBtn" onclick="submitReview('approved')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
+                <button type="button" id="approveBtn" onclick="submitReview('approved')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center">
                     <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> Approve
                 </button>
-                <button type="button" id="declineBtn" onclick="submitReview('declined')" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
+                <button type="button" id="declineBtn" onclick="submitReview('declined')" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center">
                     <i data-lucide="x-circle" class="w-5 h-5 mr-2"></i> Decline
                 </button>
             </div>
