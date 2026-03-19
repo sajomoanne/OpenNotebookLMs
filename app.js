@@ -36,7 +36,9 @@ import {
     where,
     orderBy,
     limit,
-    Timestamp
+    Timestamp,
+    arrayUnion,
+    documentId
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Global State
@@ -260,23 +262,49 @@ function startMineSync() {
         return;
     }
 
-    const mineRef = collection(db, "users", user.uid, "notebooks");
-    const q = query(mineRef, orderBy("createdAt", "desc"));
-    
-    unsubscribeMine = onSnapshot(
-        q,
-        (snapshot) => {
-            myNotebooks = mapQuerySnapshot(snapshot);
-            renderMyNotebooks();
-            updateTopicDropdown();
-        },
-        (err) => {
-            console.error("My notebooks sync error:", err);
+    // Get user's notebook IDs first
+    const userDocRef = doc(db, "users", user.uid);
+    getDoc(userDocRef).then((userDoc) => {
+        if (!userDoc.exists()) {
             myNotebooks = [];
             renderMyNotebooks();
-            updateTopicDropdown();
+            return;
         }
-    );
+
+        const notebookIds = userDoc.data().notebookIds || [];
+        
+        if (notebookIds.length === 0) {
+            myNotebooks = [];
+            renderMyNotebooks();
+            return;
+        }
+
+        // Batch load notebooks using whereIn
+        const notebooksQuery = query(
+            collection(db, "notebooks"), 
+            where(documentId(), "in", notebookIds),
+            orderBy("createdAt", "desc")
+        );
+        
+        unsubscribeMine = onSnapshot(
+            notebooksQuery,
+            (snapshot) => {
+                myNotebooks = mapQuerySnapshot(snapshot);
+                renderMyNotebooks();
+                updateTopicDropdown();
+            },
+            (err) => {
+                console.error("My notebooks sync error:", err);
+                myNotebooks = [];
+                renderMyNotebooks();
+                updateTopicDropdown();
+            }
+        );
+    }).catch((err) => {
+        console.error("Error getting user document:", err);
+        myNotebooks = [];
+        renderMyNotebooks();
+    });
 }
 
 function updateAuthUI() {
@@ -814,6 +842,44 @@ window.toggleModal = (id) => {
     el.classList.toggle("hidden");
 };
 
+window.saveBio = async () => {
+    if (!auth || !hasAccount()) return;
+    
+    const bioInput = document.getElementById("bioInput");
+    const bio = bioInput.value.trim();
+    
+    if (bio.length > 300) {
+        showToast("Bio must be 300 characters or less", "error");
+        return;
+    }
+    
+    try {
+        await updateDoc(doc(db, "users", user.uid), {
+            bio: bio
+        });
+        showToast("Bio updated successfully!", "success");
+    } catch (error) {
+        console.error("Bio update error:", error);
+        showToast("Failed to update bio", "error");
+    }
+};
+
+window.loadUserData = async () => {
+    if (!hasAccount()) return;
+    
+    try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.data();
+        
+        // Update UI
+        document.getElementById("publicNameInput").value = userData.displayName || "";
+        document.getElementById("bioInput").value = userData.bio || "";
+        document.getElementById("bioCount").textContent = userData.bio?.length || 0;
+    } catch (error) {
+        console.error("Failed to load user data:", error);
+    }
+};
+
 window.savePublicName = async () => {
     if (!auth || !hasAccount()) {
         showToast("Sign in with email to set a public name", "error");
@@ -830,7 +896,11 @@ window.savePublicName = async () => {
     }
 
     try {
+        // Update both Firebase Auth profile and Firestore user document
         await updateProfile(user, { displayName: name });
+        await updateDoc(doc(db, "users", user.uid), {
+            displayName: name
+        });
         user.displayName = name;
         updateAuthUI();
         showToast("Public name updated", "success");
@@ -887,10 +957,16 @@ window.handleEmailAuth = async (mode) => {
         if (mode === "signup") {
             const cred = await createUserWithEmailAndPassword(auth, email, password);
             user = cred.user;
+            
+            await ensureUserDocument(user);
+            
             await sendEmailVerification(user);
             showToast("Account created. Verify your email.", "success");
         } else {
             await signInWithEmailAndPassword(auth, email, password);
+            
+            await ensureUserDocument(user);
+            
             showToast("Logged in", "success");
         }
         window.toggleModal("authModal");
@@ -1063,7 +1139,11 @@ window.signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-        await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(auth, provider);
+        user = result.user;
+        
+        await ensureUserDocument(user);
+        
         window.toggleModal("authModal");
         showToast("Signed in with Google", "success");
     } catch (err) {
@@ -1085,9 +1165,63 @@ window.handleProfileClick = () => {
     }
 };
 
+async function ensureUserDocument(user) {
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (!userDoc.exists()) {
+        // Create new user document
+        await setDoc(userDocRef, {
+            email: user.email,
+            displayName: user.displayName || "",
+            bio: "",
+            createdAt: Timestamp.now(),
+            lastLoginAt: Timestamp.now(),
+            notebookIds: []
+        });
+        console.log("✅ User document created in Firestore");
+    } else {
+        // Update last login
+        await updateDoc(userDocRef, {
+            lastLoginAt: Timestamp.now()
+        });
+        console.log("✅ User login time updated");
+    }
+}
+
 // Admin Review Functions
+window.testDatabaseConnection = async () => {
+    if (!db) {
+        console.error("❌ Database not initialized");
+        return false;
+    }
+    
+    try {
+        console.log("🔍 Testing database connection...");
+        const testRef = collection(db, "users");
+        const testSnapshot = await getDocs(testRef);
+        console.log("✅ Database connection test passed");
+        console.log("✅ Users found in test:", testSnapshot.docs.length);
+        return true;
+    } catch (err) {
+        console.error("❌ Database connection test failed:", err);
+        return false;
+    }
+};
+
+window.testAdminAccess = () => {
+    console.log("🔍 Admin verification test:");
+    console.log("🔍 Is admin:", isAdmin());
+    console.log("🔍 User email:", user?.email);
+    console.log("🔍 User authenticated:", !!user);
+};
+
 window.startReviewSync = () => {
     if (!db) return;
+    
+    // Test database connection first
+    testDatabaseConnection();
+    testAdminAccess();
     
     // Add early admin verification
     if (!isAdmin()) {
@@ -1103,39 +1237,15 @@ window.startReviewSync = () => {
         unsubscribeReview = null;
     }
 
-    // Query all users to get ALL their notebooks
-    const usersRef = collection(db, "users");
-    const q = query(usersRef);
+    // Query notebooks collection directly
+    const notebooksRef = collection(db, "notebooks");
+    const q = query(notebooksRef, where("reviewStatus", "==", currentReviewFilter || "pending"));
     
     try {
         unsubscribeReview = onSnapshot(
             q,
-            async (usersSnapshot) => {
-                reviewQueue = [];
-                const allNotebooks = [];
-                
-                // For each user, get ALL their notebooks
-                for (const userDoc of usersSnapshot.docs) {
-                    const userId = userDoc.id;
-                    const notebooksRef = collection(db, "users", userId, "notebooks");
-                    const notebooksQuery = query(notebooksRef); // NO database filtering
-                    
-                    try {
-                        const notebooksSnapshot = await getDocs(notebooksQuery);
-                        notebooksSnapshot.forEach((notebookDoc) => {
-                            allNotebooks.push({
-                                id: notebookDoc.id,
-                                userId: userId,
-                                userEmail: userId,
-                                ...notebookDoc.data()
-                            });
-                        });
-                    } catch (err) {
-                        console.warn(`Error fetching notebooks for user ${userId}:`, err);
-                    }
-                }
-                
-                reviewQueue = allNotebooks;
+            (snapshot) => {
+                reviewQueue = mapQuerySnapshot(snapshot);
                 renderReviewQueue();
             },
             (err) => {
@@ -1156,7 +1266,13 @@ window.renderReviewQueue = () => {
     const emptyState = document.getElementById("emptyReviewState");
     if (!list || !emptyState) return;
 
+    console.log("🔍 Rendering review queue:");
+    console.log("🔍 Total notebooks in queue:", reviewQueue.length);
+    console.log("🔍 Current filter:", currentReviewFilter);
+
     const filtered = reviewQueue.filter(nb => (nb.reviewStatus || "pending") === currentReviewFilter);
+    
+    console.log("🔍 Notebooks after filtering:", filtered.length);
     
     if (!filtered.length) {
         list.classList.add("hidden");
@@ -1181,7 +1297,7 @@ window.renderReviewQueue = () => {
                 <div class="min-w-0 w-full">
                     <p class="font-semibold truncate">${escapeHtml(nb.title || "Untitled notebook")}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${escapeHtml(nb.category || "General")} • ${sourceLabel(nb.sources)}</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Submitted by: ${escapeHtml(nb.userEmail || nb.userId)} • ${submissionDate}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Owner ID: ${escapeHtml(nb.ownerId)} • ${submissionDate}</p>
                 </div>
                 <span class="self-start sm:self-auto px-2.5 py-1 rounded-lg text-xs font-semibold ${statusClass(nb)}">${escapeHtml(label)}</span>
             </div>
@@ -1190,7 +1306,7 @@ window.renderReviewQueue = () => {
                 <button type="button" class="open-notebook w-full sm:w-auto text-center px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                     Open
                 </button>
-                <button type="button" onclick="window.openReviewDetail('${nb.id}', '${nb.userId}')" class="w-full sm:w-auto px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors">
+                <button type="button" onclick="window.openReviewDetail('${nb.id}', '${nb.ownerId}')" class="w-full sm:w-auto px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors">
                     ${status === 'pending' ? 'Review' : 'View'}
                 </button>
             </div>
@@ -1626,7 +1742,7 @@ function attachSubmitFormListener() {
 
             try {
                 console.log("🔥 Starting database operations...");
-                const notebookRef = collection(db, "users", user.uid, "notebooks");
+                const notebookRef = collection(db, "notebooks");
                 console.log("🔥 Notebook collection reference created");
                 
                 const payload = {
@@ -1650,27 +1766,18 @@ function attachSubmitFormListener() {
                 const docRef = await addDoc(notebookRef, payload);
                 console.log("✅ Document added successfully with ID:", docRef.id);
 
-                // If public submission, also add to review queue
-                if (visibility === "public") {
-                    console.log("🔥 Adding to review queue...");
-                    const reviewQueueRef = collection(db, "reviewQueue");
-                    await addDoc(reviewQueueRef, {
-                        ...payload,
-                        originalNotebookId: null // Will be set after document creation
-                    });
-                    console.log("✅ Added to review queue successfully");
-                }
+                // Add notebook ID to user's notebookIds list
+                console.log("🔥 Adding notebook ID to user document...");
+                await updateDoc(doc(db, "users", user.uid), {
+                    notebookIds: arrayUnion(docRef.id)
+                });
+                console.log("✅ Notebook ID added to user document");
 
                 if (visibility === "private") {
                     showToast("Saved as private notebook", "success");
                 } else {
                     showToast("Submitted for evaluation", "success");
                 }
-
-                document.getElementById("submissionForm")?.reset();
-                document.getElementById("fb_custom_category")?.classList.add("hidden");
-                // After submit, take user to their notebooks page
-                redirectTo("/my-notebooks");
             } catch (err) {
                 console.error("❌ Database operation failed:", err);
                 console.error("❌ Error code:", err.code);
