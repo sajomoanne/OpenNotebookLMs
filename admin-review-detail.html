@@ -70,14 +70,8 @@
             </div>
         </div>
 
-        <!-- Loading State -->
-        <div id="reviewLoadingState" class="text-center py-12">
-            <i data-lucide="loader-2" class="w-10 h-10 text-blue-500 animate-spin mb-4"></i>
-            <p class="text-gray-500">Loading notebook details...</p>
-        </div>
-
-        <!-- Review Form (hidden initially) -->
-        <form id="reviewForm" class="space-y-6 hidden">
+        <!-- Review Form (shown immediately) -->
+        <form id="reviewForm" class="space-y-6">
             <!-- Notebook URL -->
             <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -114,6 +108,43 @@
                 </div>
             </div>
 
+            <!-- Notebook Information -->
+            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-lg font-semibold mb-4">Notebook Information</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Created At</label>
+                        <input type="text" id="review_createdAt" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Owner ID</label>
+                        <input type="text" id="review_ownerId" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Review Status</label>
+                        <select id="review_status" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="declined">Declined</option>
+                            <option value="private">Private</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Public Visibility</label>
+                        <div class="flex items-center space-x-3">
+                            <label class="flex items-center">
+                                <input type="radio" id="isPublic_true" name="isPublic" value="true" class="mr-2">
+                                <span>Public</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" id="isPublic_false" name="isPublic" value="false" class="mr-2">
+                                <span>Private</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Admin Fields -->
             <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <h2 class="text-lg font-semibold mb-4">Review Information</h2>
@@ -135,10 +166,13 @@
 
             <!-- Submit Actions -->
             <div class="flex flex-col sm:flex-row gap-4">
-                <button type="button" onclick="submitReview('approved')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
+                <button type="button" id="saveBtn" onclick="saveNotebookChanges()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors">
+                    <i data-lucide="save" class="w-5 h-5 mr-2"></i> Save Changes
+                </button>
+                <button type="button" id="approveBtn" onclick="submitReview('approved')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
                     <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> Approve
                 </button>
-                <button type="button" onclick="submitReview('declined')" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
+                <button type="button" id="declineBtn" onclick="submitReview('declined')" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
                     <i data-lucide="x-circle" class="w-5 h-5 mr-2"></i> Decline
                 </button>
             </div>
