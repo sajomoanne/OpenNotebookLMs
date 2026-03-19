@@ -2,8 +2,11 @@
 class Router {
     constructor() {
         this.routes = new Map();
-        this.guards = new Map();
         this.currentRoute = null;
+        this.navigationHistory = []; // Track navigation history
+        this.maxHistoryLength = 50; // Limit history size
+        this.authReady = false;
+        this.authUser = null;
         this.init();
     }
 
@@ -98,6 +101,16 @@ class Router {
     }
 
     async navigate(path) {
+        // Add to history before navigation (but don't add if same route)
+        if (this.currentRoute && this.currentRoute !== path) {
+            this.navigationHistory.push(this.currentRoute);
+            
+            // Limit history size
+            if (this.navigationHistory.length > this.maxHistoryLength) {
+                this.navigationHistory.shift();
+            }
+        }
+
         const route = this.routes.get(path);
         
         if (!route) {
@@ -122,10 +135,8 @@ class Router {
             return;
         }
 
-        // For hash-based routing, update the hash instead of pathname
-        if (path !== window.location.hash.substring(1)) {
-            window.location.hash = path;
-        }
+        this.currentRoute = path;
+        window.location.hash = path;
 
         await this.loadRoute(route);
     }
@@ -206,7 +217,7 @@ class Router {
                                 <i data-lucide="home" class="w-5 h-5 mr-2"></i>
                                 Go Home
                             </button>
-                            <button onclick="history.back()" class="inline-flex items-center px-6 py-3 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                            <button onclick="window.router?.back()" class="inline-flex items-center px-6 py-3 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                                 <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
                                 Go Back
                             </button>
@@ -678,6 +689,17 @@ class Router {
     // Public API methods
     redirect(path) {
         this.navigate(path);
+    }
+
+    // Custom back method for app navigation history
+    back() {
+        if (this.navigationHistory.length > 0) {
+            const previousRoute = this.navigationHistory.pop();
+            this.navigate(previousRoute);
+        } else {
+            // Fallback to browser history if no app history
+            window.history.back();
+        }
     }
 
     getCurrentRoute() {
