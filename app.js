@@ -1419,7 +1419,7 @@ window.filterReviewQueue = (filter) => {
 };
 
 window.openReviewDetail = async (notebookId, userId) => {
-    console.log("Opening review detail for:", notebookId, userId);
+    console.log("🔍 openReviewDetail called with:", notebookId, userId);
     
     if (!db || !isAdmin()) {
         console.error("Database not available or not admin");
@@ -1439,7 +1439,12 @@ window.openReviewDetail = async (notebookId, userId) => {
                 ...notebookSnap.data()
             };
             
-            console.log("Notebook loaded successfully, navigating to detail page");
+            // Set global variable explicitly
+            window.currentReviewNotebook = currentReviewNotebook;
+            
+            console.log("✅ Notebook loaded successfully:", currentReviewNotebook);
+            console.log("🔍 global window.currentReviewNotebook set:", !!window.currentReviewNotebook);
+            console.log("🔍 Navigating to detail page");
             
             // Navigate to detail page
             if (window.router) {
@@ -1461,14 +1466,18 @@ window.openReviewDetail = async (notebookId, userId) => {
 // Function to populate review form with notebook data
 window.populateReviewForm = () => {
     console.log("🔍 populateReviewForm called. currentReviewNotebook:", !!currentReviewNotebook);
+    console.log("🔍 populateReviewForm called. window.currentReviewNotebook:", !!window.currentReviewNotebook);
     
-    if (!currentReviewNotebook) {
-        console.log("No notebook data to populate");
+    // Try both local and global variables
+    const notebookData = currentReviewNotebook || window.currentReviewNotebook;
+    
+    if (!notebookData) {
+        console.log("❌ No notebook data to populate");
         return;
     }
     
     // Print the complete notebook data in console
-    console.log("📋 Notebook Data from Firebase:", currentReviewNotebook);
+    console.log("📋 Notebook Data from Firebase:", notebookData);
     
     // Populate form fields
     const urlInput = safeGetElement('review_url');
@@ -1497,30 +1506,30 @@ window.populateReviewForm = () => {
         isPublicFalse: !!isPublicFalse
     });
     
-    if (urlInput) urlInput.value = currentReviewNotebook.url || '';
-    if (titleInput) titleInput.value = currentReviewNotebook.title || '';
-    if (descInput) descInput.value = currentReviewNotebook.description || '';
-    if (categoryInput) categoryInput.value = currentReviewNotebook.category || '';
-    if (sourcesInput) sourcesInput.value = currentReviewNotebook.sources || '';
-    if (messageInput) messageInput.value = currentReviewNotebook.reviewMessage || '';
+    if (urlInput) urlInput.value = notebookData.url || '';
+    if (titleInput) titleInput.value = notebookData.title || '';
+    if (descInput) descInput.value = notebookData.description || '';
+    if (categoryInput) categoryInput.value = notebookData.category || '';
+    if (sourcesInput) sourcesInput.value = notebookData.sources || '';
+    if (messageInput) messageInput.value = notebookData.reviewMessage || '';
     
     // Populate display-only fields
     if (createdAtInput) {
-        const date = currentReviewNotebook.createdAt?.toDate();
+        const date = notebookData.createdAt?.toDate();
         if (date) {
             createdAtInput.value = date.toLocaleString();
         }
     }
     
-    if (ownerIdInput) ownerIdInput.value = currentReviewNotebook.ownerId || '';
+    if (ownerIdInput) ownerIdInput.value = notebookData.ownerId || '';
     
     if (statusSelect) {
-        statusSelect.value = currentReviewNotebook.reviewStatus || 'pending';
+        statusSelect.value = notebookData.reviewStatus || 'pending';
     }
     
     // Set public visibility radio buttons
     if (isPublicTrue && isPublicFalse) {
-        if (currentReviewNotebook.isPublic === true) {
+        if (notebookData.isPublic === true) {
             isPublicTrue.checked = true;
         } else {
             isPublicFalse.checked = true;
@@ -1528,7 +1537,7 @@ window.populateReviewForm = () => {
     }
     
     // Update button states based on current review status
-    updateButtonStates(currentReviewNotebook.reviewStatus);
+    updateButtonStates(notebookData.reviewStatus);
     
     // Update character counters
     updateCharCounters();
