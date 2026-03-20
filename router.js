@@ -650,17 +650,29 @@ class Router {
 
     initializeAdminReviewDetailPage() {
         // Admin review detail page initialization
+        console.log("🔍 Router: initializeAdminReviewDetailPage called");
+        console.log("🔍 Router: currentReviewNotebook available:", !!window.currentReviewNotebook);
+        
         // Wait for notebook data to be loaded, then populate form
         const checkAndPopulate = () => {
+            console.log("🔍 Router: Checking for notebook data...");
             if (window.currentReviewNotebook && window.populateReviewForm) {
+                console.log("🔍 Router: Data available, calling populateReviewForm");
                 window.populateReviewForm();
             } else {
-                // Retry after delay if data not ready
-                setTimeout(checkAndPopulate, 100);
+                console.log("🔍 Router: Data not ready, retrying...");
+                // Retry after delay if data not ready (max 10 attempts)
+                if (checkAndPopulate.attempts < 10) {
+                    checkAndPopulate.attempts = (checkAndPopulate.attempts || 0) + 1;
+                    setTimeout(checkAndPopulate, 100);
+                } else {
+                    console.error("🔴 Router: Failed to populate form after 10 attempts");
+                }
             }
         };
         
         // Initial attempt
+        checkAndPopulate.attempts = 0;
         setTimeout(checkAndPopulate, 100);
     }
 
