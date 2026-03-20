@@ -59,72 +59,70 @@
     </div>
 
     <!-- Admin Review Detail Content -->
-    <main data-page-content class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <div class="flex items-center mb-6">
-            <button onclick="window.router?.back()" class="mr-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+    <main data-page-content class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div class="flex items-center mb-4 sm:mb-6">
+            <button onclick="window.router?.back()" class="mr-3 sm:mr-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5 sm:w-6 sm:h-6"></i>
             </button>
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-bold">Review Notebook</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Edit details and approve or decline this notebook</p>
+            <div class="min-w-0 flex-1">
+                <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold truncate">Review Notebook</h1>
+                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Edit details and approve or decline this notebook</p>
             </div>
         </div>
 
         <!-- Review Form (shown immediately) -->
-        <form id="reviewForm" class="space-y-6">
+        <form id="reviewForm" class="space-y-4 sm:space-y-6">
             <!-- Notebook URL -->
-            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                <div class="flex items-center justify-between mb-4">
+            <div class="bg-white dark:bg-darkCard rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <label class="block text-sm font-semibold">NotebookLM URL</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="url" id="review_url" readonly class="flex-1 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
-                        <button type="button" onclick="window.open(document.getElementById('review_url').value, '_blank')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center">
-                            <i data-lucide="external-link" class="w-4 h-4 mr-1"></i> Open
-                        </button>
-                    </div>
+                    <button type="button" onclick="window.open(document.getElementById('review_url').value, '_blank')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
+                        <i data-lucide="external-link" class="w-4 h-4 mr-1"></i> Open
+                    </button>
                 </div>
+                <input type="url" id="review_url" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none text-sm">
             </div>
 
             <!-- Editable Fields -->
-            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                <h2 class="text-lg font-semibold mb-4">Notebook Details</h2>
-                <div class="space-y-4">
+            <div class="bg-white dark:bg-darkCard rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+                <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Notebook Details</h2>
+                <div class="space-y-3 sm:space-y-4">
                     <div>
                         <label class="block text-sm font-semibold mb-1">Title</label>
                         <div class="relative">
-                            <input type="text" id="review_title" maxlength="50" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="review_title" maxlength="50" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                             <span class="absolute right-3 top-3 text-xs text-gray-500"><span id="titleCount">0</span>/50</span>
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1">Summary</label>
                         <div class="relative">
-                            <textarea id="review_description" maxlength="300" rows="3" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                            <textarea id="review_description" maxlength="300" rows="3" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"></textarea>
                             <span class="absolute right-3 bottom-3 text-xs text-gray-500"><span id="descCount">0</span>/300</span>
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1">Topic</label>
-                        <input type="text" id="review_category" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="review_category" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     </div>
                 </div>
             </div>
 
             <!-- Notebook Information -->
-            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                <h2 class="text-lg font-semibold mb-4">Notebook Information</h2>
-                <div class="space-y-4">
+            <div class="bg-white dark:bg-darkCard rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+                <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Notebook Information</h2>
+                <div class="space-y-3 sm:space-y-4">
                     <div>
                         <label class="block text-sm font-semibold mb-1">Created At</label>
-                        <input type="text" id="review_createdAt" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+                        <input type="text" id="review_createdAt" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1">Owner ID</label>
-                        <input type="text" id="review_ownerId" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+                        <input type="text" id="review_ownerId" readonly class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1">Review Status</label>
-                        <select id="review_status" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none">
+                        <select id="review_status" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none text-sm">
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="declined">Declined</option>
@@ -136,11 +134,11 @@
                         <div class="flex items-center space-x-3">
                             <label class="flex items-center">
                                 <input type="radio" id="isPublic_true" name="isPublic" value="true" class="mr-2">
-                                <span>Public</span>
+                                <span class="text-sm">Public</span>
                             </label>
                             <label class="flex items-center">
                                 <input type="radio" id="isPublic_false" name="isPublic" value="false" class="mr-2">
-                                <span>Private</span>
+                                <span class="text-sm">Private</span>
                             </label>
                         </div>
                     </div>
@@ -148,18 +146,18 @@
             </div>
 
             <!-- Admin Fields -->
-            <div class="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-                <h2 class="text-lg font-semibold mb-4">Review Information</h2>
-                <div class="space-y-4">
+            <div class="bg-white dark:bg-darkCard rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+                <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Review Information</h2>
+                <div class="space-y-3 sm:space-y-4">
                     <div>
                         <label class="block text-sm font-semibold mb-1">Number of Sources</label>
-                        <input type="number" id="review_sources" min="0" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="review_sources" min="0" class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         <p class="text-xs text-gray-500 mt-1">Count the number of sources used in this NotebookLM</p>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1">Review Message</label>
                         <div class="relative">
-                            <textarea id="review_message" maxlength="300" rows="3" placeholder="Feedback for the user about their submission..." class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                            <textarea id="review_message" maxlength="300" rows="3" placeholder="Feedback for the user about their submission..." class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-darkBg outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"></textarea>
                             <span class="absolute right-3 bottom-3 text-xs text-gray-500"><span id="messageCount">0</span>/300</span>
                         </div>
                     </div>
@@ -167,15 +165,15 @@
             </div>
 
             <!-- Submit Actions -->
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button type="button" id="saveBtn" onclick="saveNotebookChanges()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center">
-                    <i data-lucide="save" class="w-5 h-5 mr-2"></i> Save Changes
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button type="button" id="saveBtn" onclick="saveNotebookChanges()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base">
+                    <i data-lucide="save" class="w-4 h-4 sm:w-5 sm:h-5 mr-2"></i> Save Changes
                 </button>
-                <button type="button" id="approveBtn" onclick="submitReview('approved')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center">
-                    <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> Approve
+                <button type="button" id="approveBtn" onclick="submitReview('approved')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base">
+                    <i data-lucide="check-circle" class="w-4 h-4 sm:w-5 sm:h-5 mr-2"></i> Approve
                 </button>
-                <button type="button" id="declineBtn" onclick="submitReview('declined')" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center">
-                    <i data-lucide="x-circle" class="w-5 h-5 mr-2"></i> Decline
+                <button type="button" id="declineBtn" onclick="submitReview('declined')" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base">
+                    <i data-lucide="x-circle" class="w-4 h-4 sm:w-5 sm:h-5 mr-2"></i> Decline
                 </button>
             </div>
         </form>
